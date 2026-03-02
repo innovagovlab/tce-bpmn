@@ -1,0 +1,6 @@
+# Ignore the Node.js modules folder
+node_modules/
+
+# Ignore the Python pycache folders
+__pycache__/
+*.pyc

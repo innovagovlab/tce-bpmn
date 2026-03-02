@@ -1,0 +1,104 @@
+<?xml version='1.0' encoding='utf-8'?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="definitions_1">
+  <process id="Process_1" isExecutable="false">
+    <startEvent id="cs_start" name="Início Manutenção">
+      <outgoing>cs_start-cs_gateway1</outgoing>
+    </startEvent>
+    <inclusiveGateway id="cs_gateway1" name="Forma de Início">
+      <incoming>cs_start-cs_gateway1</incoming>
+      <outgoing>cs_gateway1-cs_task1a</outgoing>
+      <outgoing>cs_gateway1-cs_task1b</outgoing>
+      <outgoing>cs_gateway1-cs_task1c</outgoing>
+    </inclusiveGateway>
+    <inclusiveGateway id="cs_gateway1-join">
+      <incoming>cs_task2-cs_gateway1-join</incoming>
+      <incoming>cs_task2_repeat-cs_gateway1-join</incoming>
+      <incoming>cs_task1c-cs_gateway1-join</incoming>
+      <outgoing>cs_gateway1-join-cs_task3</outgoing>
+    </inclusiveGateway>
+    <userTask id="cs_task1a" name="Iniciar Manutenção">
+      <incoming>cs_gateway1-cs_task1a</incoming>
+      <outgoing>cs_task1a-cs_task2</outgoing>
+    </userTask>
+    <sendTask id="cs_task2" name="Comunicar Setor">
+      <incoming>cs_task1a-cs_task2</incoming>
+      <outgoing>cs_task2-cs_gateway1-join</outgoing>
+    </sendTask>
+    <userTask id="cs_task1b" name="Iniciar Manutenção">
+      <incoming>cs_gateway1-cs_task1b</incoming>
+      <outgoing>cs_task1b-cs_task2_repeat</outgoing>
+    </userTask>
+    <sendTask id="cs_task2_repeat" name="Comunicar Setor">
+      <incoming>cs_task1b-cs_task2_repeat</incoming>
+      <outgoing>cs_task2_repeat-cs_gateway1-join</outgoing>
+    </sendTask>
+    <userTask id="cs_task1c" name="Iniciar Manutenção">
+      <incoming>cs_gateway1-cs_task1c</incoming>
+      <outgoing>cs_task1c-cs_gateway1-join</outgoing>
+    </userTask>
+    <userTask id="cs_task3" name="Solicitar Alteração Carta">
+      <incoming>cs_gateway1-join-cs_task3</incoming>
+      <outgoing>cs_task3-cs_task4</outgoing>
+    </userTask>
+    <userTask id="cs_task4" name="Analisar Solicitação">
+      <incoming>cs_task3-cs_task4</incoming>
+      <incoming>cs_task8-cs_task4</incoming>
+      <outgoing>cs_task4-cs_gateway2</outgoing>
+    </userTask>
+    <exclusiveGateway id="cs_gateway2" name="Solicitação Completa?">
+      <incoming>cs_task4-cs_gateway2</incoming>
+      <outgoing>cs_gateway2-cs_task5</outgoing>
+      <outgoing>cs_gateway2-cs_task8</outgoing>
+    </exclusiveGateway>
+    <serviceTask id="cs_task5" name="Alterar Carta">
+      <incoming>cs_gateway2-cs_task5</incoming>
+      <outgoing>cs_task5-cs_gateway3</outgoing>
+    </serviceTask>
+    <parallelGateway id="cs_gateway3">
+      <incoming>cs_task5-cs_gateway3</incoming>
+      <outgoing>cs_gateway3-cs_task6</outgoing>
+      <outgoing>cs_gateway3-cs_task7</outgoing>
+    </parallelGateway>
+    <parallelGateway id="cs_gateway3-join">
+      <incoming>cs_task6-cs_gateway3-join</incoming>
+      <incoming>cs_task7-cs_gateway3-join</incoming>
+      <outgoing>cs_gateway3-join-cs_end</outgoing>
+    </parallelGateway>
+    <serviceTask id="cs_task6" name="Publicar Alteração">
+      <incoming>cs_gateway3-cs_task6</incoming>
+      <outgoing>cs_task6-cs_gateway3-join</outgoing>
+    </serviceTask>
+    <sendTask id="cs_task7" name="Comunicar Conclusão">
+      <incoming>cs_gateway3-cs_task7</incoming>
+      <outgoing>cs_task7-cs_gateway3-join</outgoing>
+    </sendTask>
+    <endEvent id="cs_end" name="Conclusão Processo">
+      <incoming>cs_gateway3-join-cs_end</incoming>
+    </endEvent>
+    <userTask id="cs_task8" name="Solicitar Complemento">
+      <incoming>cs_gateway2-cs_task8</incoming>
+      <outgoing>cs_task8-cs_task4</outgoing>
+    </userTask>
+    <sequenceFlow id="cs_start-cs_gateway1" sourceRef="cs_start" targetRef="cs_gateway1" />
+    <sequenceFlow id="cs_task1a-cs_task2" sourceRef="cs_task1a" targetRef="cs_task2" />
+    <sequenceFlow id="cs_task2-cs_gateway1-join" sourceRef="cs_task2" targetRef="cs_gateway1-join" />
+    <sequenceFlow id="cs_gateway1-cs_task1a" sourceRef="cs_gateway1" targetRef="cs_task1a" name="Verificação periódica Ouvidoria" />
+    <sequenceFlow id="cs_task1b-cs_task2_repeat" sourceRef="cs_task1b" targetRef="cs_task2_repeat" />
+    <sequenceFlow id="cs_task2_repeat-cs_gateway1-join" sourceRef="cs_task2_repeat" targetRef="cs_gateway1-join" />
+    <sequenceFlow id="cs_gateway1-cs_task1b" sourceRef="cs_gateway1" targetRef="cs_task1b" name="Identificação espontânea Ouvidoria" />
+    <sequenceFlow id="cs_task1c-cs_gateway1-join" sourceRef="cs_task1c" targetRef="cs_gateway1-join" />
+    <sequenceFlow id="cs_gateway1-cs_task1c" sourceRef="cs_gateway1" targetRef="cs_task1c" name="Solicitação direta de setor" />
+    <sequenceFlow id="cs_gateway1-join-cs_task3" sourceRef="cs_gateway1-join" targetRef="cs_task3" />
+    <sequenceFlow id="cs_task3-cs_task4" sourceRef="cs_task3" targetRef="cs_task4" />
+    <sequenceFlow id="cs_task4-cs_gateway2" sourceRef="cs_task4" targetRef="cs_gateway2" />
+    <sequenceFlow id="cs_task5-cs_gateway3" sourceRef="cs_task5" targetRef="cs_gateway3" />
+    <sequenceFlow id="cs_task6-cs_gateway3-join" sourceRef="cs_task6" targetRef="cs_gateway3-join" />
+    <sequenceFlow id="cs_gateway3-cs_task6" sourceRef="cs_gateway3" targetRef="cs_task6" />
+    <sequenceFlow id="cs_task7-cs_gateway3-join" sourceRef="cs_task7" targetRef="cs_gateway3-join" />
+    <sequenceFlow id="cs_gateway3-cs_task7" sourceRef="cs_gateway3" targetRef="cs_task7" />
+    <sequenceFlow id="cs_gateway3-join-cs_end" sourceRef="cs_gateway3-join" targetRef="cs_end" />
+    <sequenceFlow id="cs_gateway2-cs_task5" sourceRef="cs_gateway2" targetRef="cs_task5" name="Sim" />
+    <sequenceFlow id="cs_task8-cs_task4" sourceRef="cs_task8" targetRef="cs_task4" />
+    <sequenceFlow id="cs_gateway2-cs_task8" sourceRef="cs_gateway2" targetRef="cs_task8" name="Não" />
+  </process>
+</definitions>
