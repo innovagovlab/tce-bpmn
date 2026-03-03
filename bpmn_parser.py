@@ -1,7 +1,12 @@
-import json
 import xml.etree.ElementTree as ET
 
 from bpmn_transformer import BpmnTransformer
+
+from utils.load_process import load_process
+from utils.apply_layout import apply_layout
+
+
+LAYOUT_JS_PATH = "./layout.js"
 
 
 class BpmnXmlGenerator:
@@ -49,7 +54,6 @@ class BpmnXmlGenerator:
             for outgoing in element["outgoing"]:
                 ET.SubElement(elem, "outgoing").text = outgoing
 
-
         # Adicionando fluxos no sistema por completo
         for flow in transformed_process["flows"]:
             seq_flow = ET.SubElement(process_element, "sequenceFlow")
@@ -67,10 +71,13 @@ class BpmnXmlGenerator:
 
         tree.write("arquivo.bpmn", encoding="utf-8", xml_declaration=True)
 
-        
+        xml_bytes = ET.tostring(root, encoding="unicode")
+        return f"<?xml version='1.0' encoding='utf-8'?>\n{xml_bytes}"
+
+
 ## Exemplo feito manual, não utilizo chamada via API por que eu ainda não tenho :)
-if __name__ == '__main__':
-    process_unjsoned = '''
+if __name__ == "__main__":
+    process = """
     {
   "process": [
     {
@@ -192,8 +199,15 @@ if __name__ == '__main__':
     }
   ]
 }
-    '''
-    process = json.loads(process_unjsoned)
+    """
+
     test = BpmnXmlGenerator()
-    bpmn_format = test.create_bpmn_xml(process["process"])
-    print(bpmn_format)
+    bpmn_xml = test.create_bpmn_xml(load_process(process))
+    print("--- XML gerado ---")
+    print(bpmn_xml)
+
+    print("\n--- XML com layout aplicado ---")
+    layouted_xml = apply_layout(bpmn_xml, LAYOUT_JS_PATH)
+    print(
+        layouted_xml
+    )  # Por enquanto só imprimindo na tela, daqui pode manipular de outras formas :)
