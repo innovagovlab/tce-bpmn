@@ -1,19 +1,26 @@
-const { layoutProcess } = require('bpmn-auto-layout');
+const { layoutProcess } = require("bpmn-auto-layout");
 
-let bpmnXml = `
-XML usado (tô fazendo manualmente por agora)
-`;
+const main = async () => {
+  let bpmnXml = "";
 
-async function layoutBpmnXml(bpmnXml) {
-    try {
-        return await layoutProcess(bpmnXml);
-    } catch (error) {
-        console.error('Error processing BPMN XML:', error);
-        return null;
-    }
-}
+  // Lê o XML do stdin enviado pelo Python
+  process.stdin.setEncoding("utf8");
+  for await (const chunk of process.stdin) {
+    bpmnXml += chunk;
+  }
 
-// Exemplo feito do paper
-layoutBpmnXml(bpmnXml).then((layoutedXml) => {
-    console.log(layoutedXml);
-});
+  if (!bpmnXml.trim()) {
+    process.stderr.write("Erro: nenhum XML recebido via stdin.\n");
+    process.exit(1);
+  }
+
+  try {
+    const layoutedXml = await layoutProcess(bpmnXml);
+    process.stdout.write(layoutedXml);
+  } catch (error) {
+    process.stderr.write(`Erro ao processar BPMN XML: ${error.message}\n`);
+    process.exit(1);
+  }
+};
+
+main();
