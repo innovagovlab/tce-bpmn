@@ -1,4 +1,4 @@
-const { layoutProcess } = require("bpmn-auto-layout");
+const { layoutProcess } = require("yet-another-bpmn-auto-layout");
 
 const main = async () => {
   let bpmnXml = "";
@@ -18,7 +18,7 @@ const main = async () => {
     const layoutedXml = await layoutProcess(bpmnXml);
     process.stdout.write(layoutedXml);
   } catch (error) {
-    process.stderr.write(`Erro ao processar BPMN XML: ${error.message}\n`);
+    process.stderr.write(`Erro ao processar BPMN XML: ${error.stack}\n`);
     process.exit(1);
   }
 };

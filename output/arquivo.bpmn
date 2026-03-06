@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="definitions_1">
+  <bpmn:collaboration id="Collaboration_1">
+    <bpmn:participant id="Participant_1" name="Mapeamento do Trabalho" processRef="Process_1" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_1" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_1" name="Analista da Ouvidoria">
+        <bpmn:flowNodeRef>cs_start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_task1a</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_task2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_task1b</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_task3</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_gateway2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_task5</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_gateway3</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_gateway3-join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_task6</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_task7</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_end</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_task8</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_2" name="Teste 2">
+        <bpmn:flowNodeRef>cs_gateway1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_gateway1-join</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_task2_repeat</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_task1c</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cs_task4</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="cs_start" name="Início Manutenção">
+      <bpmn:outgoing>cs_start-cs_gateway1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:inclusiveGateway id="cs_gateway1" name="Forma de Início">
+      <bpmn:incoming>cs_start-cs_gateway1</bpmn:incoming>
+      <bpmn:outgoing>cs_gateway1-cs_task1a</bpmn:outgoing>
+      <bpmn:outgoing>cs_gateway1-cs_task1b</bpmn:outgoing>
+      <bpmn:outgoing>cs_gateway1-cs_task1c</bpmn:outgoing>
+    </bpmn:inclusiveGateway>
+    <bpmn:inclusiveGateway id="cs_gateway1-join">
+      <bpmn:incoming>cs_task2-cs_gateway1-join</bpmn:incoming>
+      <bpmn:incoming>cs_task2_repeat-cs_gateway1-join</bpmn:incoming>
+      <bpmn:incoming>cs_task1c-cs_gateway1-join</bpmn:incoming>
+      <bpmn:outgoing>cs_gateway1-join-cs_task3</bpmn:outgoing>
+    </bpmn:inclusiveGateway>
+    <bpmn:userTask id="cs_task1a" name="Iniciar Manutenção">
+      <bpmn:incoming>cs_gateway1-cs_task1a</bpmn:incoming>
+      <bpmn:outgoing>cs_task1a-cs_task2</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sendTask id="cs_task2" name="Comunicar Setor">
+      <bpmn:incoming>cs_task1a-cs_task2</bpmn:incoming>
+      <bpmn:outgoing>cs_task2-cs_gateway1-join</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:userTask id="cs_task1b" name="Iniciar Manutenção">
+      <bpmn:incoming>cs_gateway1-cs_task1b</bpmn:incoming>
+      <bpmn:outgoing>cs_task1b-cs_task2_repeat</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sendTask id="cs_task2_repeat" name="Comunicar Setor">
+      <bpmn:incoming>cs_task1b-cs_task2_repeat</bpmn:incoming>
+      <bpmn:outgoing>cs_task2_repeat-cs_gateway1-join</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:userTask id="cs_task1c" name="Iniciar Manutenção">
+      <bpmn:incoming>cs_gateway1-cs_task1c</bpmn:incoming>
+      <bpmn:outgoing>cs_task1c-cs_gateway1-join</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="cs_task3" name="Solicitar Alteração Carta">
+      <bpmn:incoming>cs_gateway1-join-cs_task3</bpmn:incoming>
+      <bpmn:outgoing>cs_task3-cs_task4</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="cs_task4" name="Analisar Solicitação">
+      <bpmn:incoming>cs_task3-cs_task4</bpmn:incoming>
+      <bpmn:incoming>cs_task8-cs_task4</bpmn:incoming>
+      <bpmn:outgoing>cs_task4-cs_gateway2</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="cs_gateway2" name="Solicitação Completa?">
+      <bpmn:incoming>cs_task4-cs_gateway2</bpmn:incoming>
+      <bpmn:outgoing>cs_gateway2-cs_task5</bpmn:outgoing>
+      <bpmn:outgoing>cs_gateway2-cs_task8</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="cs_task5" name="Alterar Carta">
+      <bpmn:incoming>cs_gateway2-cs_task5</bpmn:incoming>
+      <bpmn:outgoing>cs_task5-cs_gateway3</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:parallelGateway id="cs_gateway3">
+      <bpmn:incoming>cs_task5-cs_gateway3</bpmn:incoming>
+      <bpmn:outgoing>cs_gateway3-cs_task6</bpmn:outgoing>
+      <bpmn:outgoing>cs_gateway3-cs_task7</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:parallelGateway id="cs_gateway3-join">
+      <bpmn:incoming>cs_task6-cs_gateway3-join</bpmn:incoming>
+      <bpmn:incoming>cs_task7-cs_gateway3-join</bpmn:incoming>
+      <bpmn:outgoing>cs_gateway3-join-cs_end</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:serviceTask id="cs_task6" name="Publicar Alteração">
+      <bpmn:incoming>cs_gateway3-cs_task6</bpmn:incoming>
+      <bpmn:outgoing>cs_task6-cs_gateway3-join</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sendTask id="cs_task7" name="Comunicar Conclusão">
+      <bpmn:incoming>cs_gateway3-cs_task7</bpmn:incoming>
+      <bpmn:outgoing>cs_task7-cs_gateway3-join</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:endEvent id="cs_end" name="Conclusão Processo">
+      <bpmn:incoming>cs_gateway3-join-cs_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:userTask id="cs_task8" name="Solicitar Complemento">
+      <bpmn:incoming>cs_gateway2-cs_task8</bpmn:incoming>
+      <bpmn:outgoing>cs_task8-cs_task4</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="cs_start-cs_gateway1" sourceRef="cs_start" targetRef="cs_gateway1" />
+    <bpmn:sequenceFlow id="cs_task1a-cs_task2" sourceRef="cs_task1a" targetRef="cs_task2" />
+    <bpmn:sequenceFlow id="cs_task2-cs_gateway1-join" sourceRef="cs_task2" targetRef="cs_gateway1-join" />
+    <bpmn:sequenceFlow id="cs_gateway1-cs_task1a" name="Verificação periódica Ouvidoria" sourceRef="cs_gateway1" targetRef="cs_task1a" />
+    <bpmn:sequenceFlow id="cs_task1b-cs_task2_repeat" sourceRef="cs_task1b" targetRef="cs_task2_repeat" />
+    <bpmn:sequenceFlow id="cs_task2_repeat-cs_gateway1-join" sourceRef="cs_task2_repeat" targetRef="cs_gateway1-join" />
+    <bpmn:sequenceFlow id="cs_gateway1-cs_task1b" name="Identificação espontânea Ouvidoria" sourceRef="cs_gateway1" targetRef="cs_task1b" />
+    <bpmn:sequenceFlow id="cs_task1c-cs_gateway1-join" sourceRef="cs_task1c" targetRef="cs_gateway1-join" />
+    <bpmn:sequenceFlow id="cs_gateway1-cs_task1c" name="Solicitação direta de setor" sourceRef="cs_gateway1" targetRef="cs_task1c" />
+    <bpmn:sequenceFlow id="cs_gateway1-join-cs_task3" sourceRef="cs_gateway1-join" targetRef="cs_task3" />
+    <bpmn:sequenceFlow id="cs_task3-cs_task4" sourceRef="cs_task3" targetRef="cs_task4" />
+    <bpmn:sequenceFlow id="cs_task4-cs_gateway2" sourceRef="cs_task4" targetRef="cs_gateway2" />
+    <bpmn:sequenceFlow id="cs_task5-cs_gateway3" sourceRef="cs_task5" targetRef="cs_gateway3" />
+    <bpmn:sequenceFlow id="cs_task6-cs_gateway3-join" sourceRef="cs_task6" targetRef="cs_gateway3-join" />
+    <bpmn:sequenceFlow id="cs_gateway3-cs_task6" sourceRef="cs_gateway3" targetRef="cs_task6" />
+    <bpmn:sequenceFlow id="cs_task7-cs_gateway3-join" sourceRef="cs_task7" targetRef="cs_gateway3-join" />
+    <bpmn:sequenceFlow id="cs_gateway3-cs_task7" sourceRef="cs_gateway3" targetRef="cs_task7" />
+    <bpmn:sequenceFlow id="cs_gateway3-join-cs_end" sourceRef="cs_gateway3-join" targetRef="cs_end" />
+    <bpmn:sequenceFlow id="cs_gateway2-cs_task5" name="Sim" sourceRef="cs_gateway2" targetRef="cs_task5" />
+    <bpmn:sequenceFlow id="cs_task8-cs_task4" sourceRef="cs_task8" targetRef="cs_task4" />
+    <bpmn:sequenceFlow id="cs_gateway2-cs_task8" name="Não" sourceRef="cs_gateway2" targetRef="cs_task8" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_Collaboration_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_Collaboration_1" bpmnElement="Collaboration_1">
+      <bpmndi:BPMNShape id="Participant_1_di" bpmnElement="Participant_1" isHorizontal="true">
+        <dc:Bounds x="0" y="0" width="2460" height="980" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_2_di" bpmnElement="Lane_2">
+        <dc:Bounds x="30" y="420" width="2430" height="560" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_1_di" bpmnElement="Lane_1">
+        <dc:Bounds x="30" y="0" width="2430" height="420" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="cs_start_di" bpmnElement="cs_start">
+        <dc:Bounds x="192" y="122" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="cs_gateway1_di" bpmnElement="cs_gateway1">
+        <dc:Bounds x="335" y="675" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="cs_gateway1-join_di" bpmnElement="cs_gateway1-join">
+        <dc:Bounds x="1085" y="675" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="cs_task1a_di" bpmnElement="cs_task1a">
+        <dc:Bounds x="760" y="100" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="cs_task2_di" bpmnElement="cs_task2">
+        <dc:Bounds x="910" y="100" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="cs_task1b_di" bpmnElement="cs_task1b">
+        <dc:Bounds x="460" y="100" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="cs_task2_repeat_di" bpmnElement="cs_task2_repeat">
+        <dc:Bounds x="610" y="520" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="cs_task1c_di" bpmnElement="cs_task1c">
+        <dc:Bounds x="460" y="800" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="cs_task3_di" bpmnElement="cs_task3">
+        <dc:Bounds x="1210" y="100" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="cs_task4_di" bpmnElement="cs_task4">
+        <dc:Bounds x="1360" y="520" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="cs_gateway2_di" bpmnElement="cs_gateway2" isMarkerVisible="true">
+        <dc:Bounds x="1535" y="115" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="cs_task5_di" bpmnElement="cs_task5">
+        <dc:Bounds x="1660" y="100" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="cs_gateway3_di" bpmnElement="cs_gateway3">
+        <dc:Bounds x="1835" y="115" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="cs_gateway3-join_di" bpmnElement="cs_gateway3-join">
+        <dc:Bounds x="2135" y="115" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="cs_task6_di" bpmnElement="cs_task6">
+        <dc:Bounds x="1960" y="100" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="cs_task7_di" bpmnElement="cs_task7">
+        <dc:Bounds x="1960" y="240" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="cs_end_di" bpmnElement="cs_end">
+        <dc:Bounds x="2292" y="122" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="cs_task8_di" bpmnElement="cs_task8">
+        <dc:Bounds x="1660" y="240" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="cs_start-cs_gateway1_di" bpmnElement="cs_start-cs_gateway1">
+        <di:waypoint x="210" y="158" />
+        <di:waypoint x="210" y="700" />
+        <di:waypoint x="335" y="700" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="cs_task1a-cs_task2_di" bpmnElement="cs_task1a-cs_task2">
+        <di:waypoint x="860" y="140" />
+        <di:waypoint x="910" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="cs_task2-cs_gateway1-join_di" bpmnElement="cs_task2-cs_gateway1-join">
+        <di:waypoint x="960" y="180" />
+        <di:waypoint x="960" y="700" />
+        <di:waypoint x="1085" y="700" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="cs_gateway1-cs_task1a_di" bpmnElement="cs_gateway1-cs_task1a">
+        <di:waypoint x="385" y="700" />
+        <di:waypoint x="810" y="700" />
+        <di:waypoint x="810" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="cs_task1b-cs_task2_repeat_di" bpmnElement="cs_task1b-cs_task2_repeat">
+        <di:waypoint x="510" y="180" />
+        <di:waypoint x="510" y="560" />
+        <di:waypoint x="610" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="cs_task2_repeat-cs_gateway1-join_di" bpmnElement="cs_task2_repeat-cs_gateway1-join">
+        <di:waypoint x="660" y="600" />
+        <di:waypoint x="660" y="700" />
+        <di:waypoint x="1085" y="700" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="cs_gateway1-cs_task1b_di" bpmnElement="cs_gateway1-cs_task1b">
+        <di:waypoint x="385" y="700" />
+        <di:waypoint x="510" y="700" />
+        <di:waypoint x="510" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="cs_task1c-cs_gateway1-join_di" bpmnElement="cs_task1c-cs_gateway1-join">
+        <di:waypoint x="560" y="840" />
+        <di:waypoint x="1110" y="840" />
+        <di:waypoint x="1110" y="725" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="cs_gateway1-cs_task1c_di" bpmnElement="cs_gateway1-cs_task1c">
+        <di:waypoint x="360" y="725" />
+        <di:waypoint x="360" y="840" />
+        <di:waypoint x="460" y="840" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="cs_gateway1-join-cs_task3_di" bpmnElement="cs_gateway1-join-cs_task3">
+        <di:waypoint x="1135" y="700" />
+        <di:waypoint x="1260" y="700" />
+        <di:waypoint x="1260" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="cs_task3-cs_task4_di" bpmnElement="cs_task3-cs_task4">
+        <di:waypoint x="1260" y="180" />
+        <di:waypoint x="1260" y="560" />
+        <di:waypoint x="1360" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="cs_task4-cs_gateway2_di" bpmnElement="cs_task4-cs_gateway2">
+        <di:waypoint x="1460" y="560" />
+        <di:waypoint x="1560" y="560" />
+        <di:waypoint x="1560" y="165" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="cs_task5-cs_gateway3_di" bpmnElement="cs_task5-cs_gateway3">
+        <di:waypoint x="1760" y="140" />
+        <di:waypoint x="1835" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="cs_task6-cs_gateway3-join_di" bpmnElement="cs_task6-cs_gateway3-join">
+        <di:waypoint x="2060" y="140" />
+        <di:waypoint x="2135" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="cs_gateway3-cs_task6_di" bpmnElement="cs_gateway3-cs_task6">
+        <di:waypoint x="1885" y="140" />
+        <di:waypoint x="1960" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="cs_task7-cs_gateway3-join_di" bpmnElement="cs_task7-cs_gateway3-join">
+        <di:waypoint x="2060" y="280" />
+        <di:waypoint x="2160" y="280" />
+        <di:waypoint x="2160" y="165" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="cs_gateway3-cs_task7_di" bpmnElement="cs_gateway3-cs_task7">
+        <di:waypoint x="1860" y="165" />
+        <di:waypoint x="1860" y="280" />
+        <di:waypoint x="1960" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="cs_gateway3-join-cs_end_di" bpmnElement="cs_gateway3-join-cs_end">
+        <di:waypoint x="2185" y="140" />
+        <di:waypoint x="2292" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="cs_gateway2-cs_task5_di" bpmnElement="cs_gateway2-cs_task5">
+        <di:waypoint x="1585" y="140" />
+        <di:waypoint x="1660" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="cs_task8-cs_task4_di" bpmnElement="cs_task8-cs_task4">
+        <di:waypoint x="1710" y="320" />
+        <di:waypoint x="1710" y="560" />
+        <di:waypoint x="1460" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="cs_gateway2-cs_task8_di" bpmnElement="cs_gateway2-cs_task8">
+        <di:waypoint x="1560" y="165" />
+        <di:waypoint x="1560" y="280" />
+        <di:waypoint x="1660" y="280" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

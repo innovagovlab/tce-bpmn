@@ -11,6 +11,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "bpmn-auto-layout": "^1.2.0"
+    "bpmn-auto-layout": "^1.2.0",
+    "yet-another-bpmn-auto-layout": "^1.1.1"
   }
 }
