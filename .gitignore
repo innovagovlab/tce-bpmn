@@ -4,3 +4,8 @@ node_modules/
 # Ignore the Python pycache folders
 __pycache__/
 *.pyc
+
+# Ignore environment variables and virtual environment
+.env
+venv/
+

@@ -1,5 +1,4 @@
 from typing import Optional
-import json
 
 '''
 O foco dessa classe é criar e separar, de maneira clara, os elementos e fluxos da modelagem BPMN, onde vamos separar o JSON-BPMN em duas partes
@@ -17,6 +16,7 @@ class BpmnTransformer:
                 "id": "element_id",                     // id do elemento
                 "type": "element_type",                 // tipo do elemento
                 "label": "element_label",               // descrição do elemento
+                "lane": "element_lane",                 // Em qual lane se posiciona o elemento
                 "incoming": ["incoming_flow_id"],       // fluxo que está "entrando no elemento" Ex: 'cs_gateway1-cs_task1a'
                 "outgoing": ["outgoing_flow_id"]        // fluxo que está "saíndo do elemento" Ex: 'cs_start-cs_gateway1'
             }
@@ -54,6 +54,7 @@ class BpmnTransformer:
                 "id": element["id"],
                 "type": element["type"],
                 "label": element.get("label"),
+                "lane": element.get("lane")
             })
 
             gateway_type = element["type"]
@@ -92,7 +93,7 @@ class BpmnTransformer:
 
         if element.get("has_join"):
             join_id = f"{element['id']}-join"
-            self.elements.append({"id": join_id, "type": gateway_type, "label": None})
+            self.elements.append({"id": join_id, "type": gateway_type, "label": None, "lane": element.get("lane")})
 
         # Visto que um gateway possuí elementos dentro dele (no caso seriam os ramos), vamos percorrer por eles para identificar todos
         for branch in element["branches"]:
@@ -145,7 +146,7 @@ class BpmnTransformer:
         então não precisaremos da verificação dele
         '''
         join_id = f"{element['id']}-join"
-        self.elements.append({"id": join_id, "type": "parallelGateway", "label": None})
+        self.elements.append({"id": join_id, "type": "parallelGateway", "label": None, "lane": element.get("lane")})
 
         # Um gateway paralelo nunca vai ser vazio, então não precisamos conferir
         for branch in element["branches"]:
