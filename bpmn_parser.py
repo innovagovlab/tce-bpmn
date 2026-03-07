@@ -1,9 +1,12 @@
 import xml.etree.ElementTree as ET
+import json
+import re
 
 from bpmn_transformer import BpmnTransformer
 
 from utils.load_process import load_process
 from utils.apply_layout import apply_layout
+from gpt_chat_completion import get_chat_completion
 
 
 LAYOUT_JS_PATH = "./auto-layout-process/layout.js"
@@ -168,150 +171,87 @@ class BpmnXmlGenerator:
     return f"<?xml version='1.0' encoding='utf-8'?>\n{xml_bytes}"
 
 
-## Exemplo feito manual, não utilizo chamada via API por que eu ainda não tenho :)
 if __name__ == "__main__":
+  # Exemplo de processo (planilha transformada em JSON)
   process = """
-  {
-  "process": [
+{
+  "processo": [
     {
-      "type": "startEvent",
-      "id": "cs_start",
-      "label": "Início Manutenção",
-      "lane": "Analista da Ouvidoria"
+      "Entradas": "Prazo de 180 dias; Mudança percebida; Solicitação de setor.",
+      "Atividade": "Iniciar Manutenção da Carta de Serviços",
+      "Ator/Área responsável": "Analista da Ouvidoria / Setor Responsável do TCE-PE",
+      "Recursos de TI": "Portal do TCE-PE / Sistemas do Serviço",
+      "Produtos": "Necessidade de atualização identificada",
+      "Observações": "A atividade pode ser iniciada de 3 formas: 1) Verificação periódica da Ouvidoria; 2) Identificação espontânea da Ouvidoria; 3) Solicitação direta de um setor."
     },
     {
-      "type": "inclusiveGateway",
-      "id": "cs_gateway1",
-      "label": "Forma de Início",
-      "lane": "Teste 2",
-      "has_join": true,
-      "branches": [
-        {
-          "condition": "Verificação periódica Ouvidoria",
-          "path": [
-            {
-              "type": "userTask",
-              "id": "cs_task1a",
-              "label": "Iniciar Manutenção",
-              "lane": "Analista da Ouvidoria"
-            },
-            {
-              "type": "sendTask",
-              "id": "cs_task2",
-              "label": "Comunicar Setor",
-              "lane": "Analista da Ouvidoria"
-            }
-          ]
-        },
-        {
-          "condition": "Identificação espontânea Ouvidoria",
-          "path": [
-            {
-              "type": "userTask",
-              "id": "cs_task1b",
-              "label": "Iniciar Manutenção",
-              "lane": "Analista da Ouvidoria"
-            },
-            {
-              "type": "sendTask",
-              "id": "cs_task2_repeat",
-              "label": "Comunicar Setor",
-              "lane": "Teste 2"
-            }
-          ]
-        },
-        {
-          "condition": "Solicitação direta de setor",
-          "path": [
-            {
-              "type": "userTask",
-              "id": "cs_task1c",
-              "label": "Iniciar Manutenção",
-              "lane": "Teste 2"
-            }
-          ]
-        }
-      ]
+      "Entradas": "Necessidade de atualização identificada",
+      "Atividade": "Comunicar Mudança Identificada ao Setor Responsável",
+      "Ator/Área responsável": "Analista da Ouvidoria",
+      "Recursos de TI": "Sistema SEI",
+      "Produtos": "Processo SEI com comunicado enviado ao setor",
+      "Observações": "Esta atividade ocorre apenas quando o processo é iniciado pela Ouvidoria (casos 1 e 2)."
     },
     {
-      "type": "userTask",
-      "id": "cs_task3",
-      "label": "Solicitar Alteração Carta",
-      "lane": "Analista da Ouvidoria"
+      "Entradas": "Processo SEI com comunicado da Ouvidoria OU Mudança identificada pelo próprio setor",
+      "Atividade": "Solicitar Formalmente a Alteração na Carta de Serviços",
+      "Ator/Área responsável": "Setor Responsável pelo Serviço",
+      "Recursos de TI": "Sistema SEI",
+      "Produtos": "Novo Processo SEI com solicitação de alteração enviado à Ouvidoria",
+      "Observações": "Esta etapa é o ponto de convergência dos três inícios possíveis do processo."
     },
     {
-      "type": "userTask",
-      "id": "cs_task4",
-      "label": "Analisar Solicitação",
-      "lane": "Teste 2"
+      "Entradas": "Novo Processo SEI com solicitação de alteração",
+      "Atividade": "Analisar Solicitação de Alteração",
+      "Ator/Área responsável": "Analista da Ouvidoria",
+      "Recursos de TI": "Sistema SEI",
+      "Produtos": "Solicitação analisada (completa ou incompleta)",
+      "Observações": "Ponto de decisão: se a solicitação estiver completa, o processo segue; se estiver incompleta, aciona a próxima atividade."
     },
     {
-      "type": "exclusiveGateway",
-      "id": "cs_gateway2",
-      "label": "Solicitação Completa?",
-      "lane": "Analista da Ouvidoria",
-      "has_join": false,
-      "branches": [
-        {
-          "condition": "Sim",
-          "path": [
-            {
-              "type": "serviceTask",
-              "id": "cs_task5",
-              "label": "Alterar Carta",
-              "lane": "Analista da Ouvidoria"
-            },
-            {
-              "type": "parallelGateway",
-              "id": "cs_gateway3",
-              "lane": "Analista da Ouvidoria",
-              "branches": [
-                [
-                  {
-                    "type": "serviceTask",
-                    "id": "cs_task6",
-                    "label": "Publicar Alteração",
-                    "lane": "Analista da Ouvidoria"
-                  }
-                ],
-                [
-                  {
-                    "type": "sendTask",
-                    "id": "cs_task7",
-                    "label": "Comunicar Conclusão",
-                    "lane": "Analista da Ouvidoria"
-                  }
-                ]
-              ]
-            },
-            {
-              "type": "endEvent",
-              "id": "cs_end",
-              "label": "Conclusão Processo",
-              "lane": "Analista da Ouvidoria"
-            }
-          ]
-        },
-        {
-          "condition": "Não",
-          "path": [
-            {
-              "type": "userTask",
-              "id": "cs_task8",
-              "label": "Solicitar Complemento",
-              "lane": "Analista da Ouvidoria"
-            }
-          ],
-          "next": "cs_task4"
-        }
-      ]
+      "Entradas": "Solicitação analisada (incompleta)",
+      "Atividade": "Solicitar Informações Complementares",
+      "Ator/Área responsável": "Analista da Ouvidoria",
+      "Recursos de TI": "Sistema SEI",
+      "Produtos": "Despacho no SEI solicitando complementação",
+      "Observações": "O processo é devolvido ao setor responsável e aguarda reenvio com informações corrigidas, retornando para 'Analisar Solicitação'."
+    },
+    {
+      "Entradas": "Solicitação analisada (completa)",
+      "Atividade": "Realizar Alteração na Carta de Serviços",
+      "Ator/Área responsável": "Analista da Ouvidoria",
+      "Recursos de TI": "Portal da Ouvidoria do TCE-PE",
+      "Produtos": "Texto da Carta de Serviços editado (não publicado)",
+      "Observações": "A alteração é feita no ambiente de edição do portal, preparando para publicação."
+    },
+    {
+      "Entradas": "Texto da Carta de Serviços editado",
+      "Atividade": "Publicar Alteração da Carta de Serviços",
+      "Ator/Área responsável": "Analista da Ouvidoria",
+      "Recursos de TI": "Portal da Ouvidoria do TCE-PE",
+      "Produtos": "Carta de Serviços atualizada e pública",
+      "Observações": "Esta ação torna a mudança visível para o cidadão."
+    },
+    {
+      "Entradas": "Texto da Carta de Serviços editado",
+      "Atividade": "Comunicar Conclusão ao Setor Solicitante",
+      "Ator/Área responsável": "Analista da Ouvidoria",
+      "Recursos de TI": "Sistema SEI",
+      "Produtos": "Despacho de encerramento enviado no processo SEI",
+      "Observações": "Ocorre em paralelo à publicação e encerra a comunicação com o setor."
     }
   ]
 }
     """
 
-  test = BpmnXmlGenerator()
-  bpmn_xml = test.create_bpmn_xml(load_process(process))
+  ai_response =  get_chat_completion(process)
+  # remove markdown
+  clean = re.sub(r"```json|```", "", ai_response).strip()
+
+  data = json.loads(clean)
+
+  xml_generator = BpmnXmlGenerator()
+  bpmn_xml = xml_generator.create_bpmn_xml(load_process(data))
 
   layouted_xml = apply_layout(bpmn_xml, LAYOUT_JS_PATH)
   

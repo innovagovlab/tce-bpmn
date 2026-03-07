@@ -1,5 +1,4 @@
 from typing import Optional
-import json
 
 '''
 O foco dessa classe é criar e separar, de maneira clara, os elementos e fluxos da modelagem BPMN, onde vamos separar o JSON-BPMN em duas partes

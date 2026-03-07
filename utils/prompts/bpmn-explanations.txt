@@ -1,0 +1,149 @@
+A representação JSON do BPMN utiliza algumas sequência de elementos na qual é produzida para descrever o processo. Cada elemento é executado em ordem baseado em sua "posição" baseada no processo a não ser que os gateways especifique o caminho correto.
+
+# Formulação BPMN para a transformação do processo
+
+## Events
+
+Para especificar o tipo de evento, utilize a parte de "type" para determinar o tipo. Os tipos de eventos suportados são: "startEvent" e "endEvent".
+
+Eventos podem, opcionalmente, possuir uma definição na qual especifica o que pode acioná-lo ou é acionado pelo evento:
+- Use 'timerEventDefinition' para eventos baseados em tempo (horários, delays, tempos limite).
+- Use 'messageEventDefinition' para eventos baseados em mensagens, seja ela envio ou recebimento.
+- Caso não há algum tipo específico, omita esse campo.
+
+Tipos de Eventos:
+- 'startEvent': Inicia o processo (pode possuir timerEventDefinition ou messageEventDefinition)
+- 'endEvent': Finaliza o processo (pode possuir messageEventDefinition)
+
+Nomes (label) precisam ser claros e simples (cerca de 2 a 5 palavras)
+Raias (lane) precisam ser informadas de acordo com o ator ou responsável da função, ou seja quem irá fazer ou acionar determinada função.
+
+cada item deve ser tratado como um startEvent independente.
+
+```json
+{
+    "type": String = "startEvent" | "endEvent",
+    "id": String,
+    "label": String, // OPCIONAL: definição curta de um evento
+	"lane": String,
+    "eventDefinition": String = "timerEventDefinition" | "messageEventDefinition", // OPCIONAL: Tipo de acionador de evento
+}
+```
+
+## Tasks
+
+Para especificar o tipo de tasks, utilize a parte de "type" para determinar o tipo. Os tipos de tasks suportadas são: "task", "userTask", "serviceTask" e "sendTask", "receiveTask".
+Sempre tente especificar o tipo de task mais específico: 
+- Use 'userTask' para tasks que possuem interação de pessoas (revisar, decidir, inserir dados)
+- Use 'serviceTask' para operações automatizadas do sistema (Chamadas API, cálculos, operações automatizadas)
+- Use 'sendTask' para operações de envios automáticos do sistema (emails, notificações, mensagens)
+- Use 'receiveTask' para operações de recebimento automáticos do sistema (espera de mensagens, webhooks)
+- Use 'task' apens se a ação não pode ser declarada fielmente
+Nomes (label) precisam ser claros e simples (cerca de 2 a 5 palavras)
+Raias (lane) precisam ser informadas de acordo com o ator ou responsável da função, ou seja quem irá fazer ou acionar determinada função.
+
+```json
+{
+    "type": String = "task" | "userTask" | "serviceTask" | "sendTask" | "receiveTask",
+    "id": String,
+    "label": String, // Descrição básica da atividade
+	"lane": String,
+}
+```
+
+## Gateways
+
+Os gateways vão determinar o fluxo do processo baseado em condições ou em tasks paralelas.
+
+### Gateway Exclusivo
+
+Cada ramo deve incluir uma condição e uma matriz de elementos que serão executados se a condição for atendida.
+Se um ramo tiver um "path" vazio, ele leva ao primeiro elemento após o gateway exclusivo.
+Se um ramo não leva para o próximo elemento  no processo (exemplo, volta para o elemento anterior), especifique o id do próximo elemento.
+Se um ramo leva para o próximo elemento no processo, não especifique o id do próximo elemento.
+Se o processo precisa terminar sob uma condição específica, você precisa incluir explicitamente um evento de fim (endEvent) no ramo desse "path", se não for dado um evento de fim, o processo vai automaticamente continuar para a próxima task em sequência.
+Se a descrição do processo não menciona explicitamente o 'outro' ramo ou especificar o resultado para uma condição não atendida, assuma que ele leva a um evento final.
+Raias (lane) precisam ser informadas de acordo com o ator ou responsável da função, ou seja quem irá fazer ou acionar determinada função.
+
+```json
+{
+    "type": String = "exclusiveGateway",
+    "id": String,
+    "label": String, // Descrição do gateway (e.g. "Solicitação Completa?")
+	"lane": String,
+    "has_join": Boolean, // se o gateway contém um elemento de junção que junta os ramos.
+    "branches": [
+        {
+            "condition": String, // condição para o ramo
+            "path": [], // array de elementos que são executados se a condição for atendida (pode estar vazia)
+            "next": String, // OPCIONAL: ID do próximo elemento, caso a sequência padrão não seja seguida. Omita ou defina como nulo se a sequência padrão for seguida.
+        },
+        {
+            "condition": String,
+            "path": [],
+            "next": String, // OPCIONAL: como explicado acima.
+        },
+        // ... outros ramos
+    ],
+}
+```
+
+### Gateway Inclusivo
+
+Um gateway inclusivo (gateway OR) permite que vários caminhos sejam percorridos simultaneamente com base em suas condições. Ao contrário dos gateways exclusivos, onde apenas um caminho é escolhido, os gateways inclusivos avaliam todas as condições e percorrem TODOS os caminhos onde a condição é satisfeita.
+
+Utilize gteways inclusivos somente quando:
+- Várias atividades paralelas poderem ser necessárias dependendo das condições (por exemplo, preparar massa E salada E bife de acordo com o pedido).
+- O número de caminhos paralelos é determinado pelos dados/variáveis, em vez de ser fixo.
+- Você precisa de "um ou mais" comportamentos em vez de "exatamente um" (exclusivo) ou "todos" (paralelo).
+
+Cada ramo deve incluir um array de elementos. Todos os ramos que atenderem às condições serão executados em paralelo.
+Ramos não padrões PRECISAM ter alguma condição. Ramos padrões podem NÃO POSSUIR uma condição.
+Opcionalmente, um ramo pode ser marcado como padrão (is_default: true). Este ramo é utilizado somente quando NENHUMA outra condição for atendida.
+Raias (lane) precisam ser informadas de acordo com o ator ou responsável da função, ou seja quem irá fazer ou acionar determinada função
+
+```json
+{
+    "type": String = "inclusiveGateway",
+    "id": String,
+    "label": String, // Descrição do gateway (e.g. "Qual solicitação analisar?")
+	"lane": String,
+    "has_join": Boolean, // se o gateway contém um elemento de junção que junta os ramos.
+    "branches": [
+        {
+            "condition": String, // OBRIGATÓRIO para opções não padrão (ex.: "O pedido inclui massa")
+            "path": [], // array de elementos caso a condição seja cumprida
+            "next": String, // OPCIONAL: ID do próximo elemento, caso a sequência padrão não seja seguida. Omita ou defina como nulo se a sequência padrão for seguida.
+            "is_default": Boolean, // OPCIONAL: marca essa como ramo principal/padrão (default: false)
+        },
+        {
+            // Exemplo de ramo padrão - SEM campo de condição
+            "path": [], // array de elementos caso a condição seja cumprida
+            "next": String, // OPCIONAL: como explicado acima.
+            "is_default": true, // marca essa como ramo principal/padrão
+        },
+        // ... outros ramos
+    ],
+}
+```
+
+### Gateway Paralelo
+
+Especifique "ramos" como uma array de arrays, onde cada submatriz lista elementos executados em paralelo.
+Um elemento convergente é gerado automaticamente para sincronizar os ramos paralelos. Portanto, não é necessário especificá-lo explicitamente.
+
+```json
+{
+    "type": String = "parallelGateway",
+    "id": String,
+	"lane": String,
+    "branches": [
+        [], // array de elementos que são executados em paralelo com o próximo array
+        [], // array de elementos que são executados em paralelo com o array anterior
+        // ... outros arrays
+    ],
+}
+```
+
+
+
