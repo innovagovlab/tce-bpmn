@@ -32,7 +32,7 @@ Siga os passos abaixo para configurar o ambiente virtual Python e instalar as de
 1. Certifique-se de que o Python está instalado em sua máquina. Recomendamos a versão 3.8 ou superior.
 2. No terminal, navegue até a pasta do projeto:
    ```bash
-   cd bpmn-parser
+   cd bpmn-automatized
    ```
 3. Crie o ambiente virtual:
    ```bash
