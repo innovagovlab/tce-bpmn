@@ -6,9 +6,10 @@ from bpmn_transformer import BpmnTransformer
 
 from utils.load_process import load_process
 from utils.apply_layout import apply_layout
+from utils.input_treatment import load_type_document
 from gpt_chat_completion import get_chat_completion
 
-
+INPUT_PATH = "./input/input_example.txt"
 LAYOUT_JS_PATH = "./auto-layout-process/layout.js"
 FINAL_BPMN_PATH = "./output/arquivo.bpmn"
 
@@ -173,78 +174,10 @@ class BpmnXmlGenerator:
 
 if __name__ == "__main__":
   # Exemplo de processo (planilha transformada em JSON)
-  process = """
-{
-  "processo": [
-    {
-      "Entradas": "Prazo de 180 dias; Mudança percebida; Solicitação de setor.",
-      "Atividade": "Iniciar Manutenção da Carta de Serviços",
-      "Ator/Área responsável": "Analista da Ouvidoria / Setor Responsável do TCE-PE",
-      "Recursos de TI": "Portal do TCE-PE / Sistemas do Serviço",
-      "Produtos": "Necessidade de atualização identificada",
-      "Observações": "A atividade pode ser iniciada de 3 formas: 1) Verificação periódica da Ouvidoria; 2) Identificação espontânea da Ouvidoria; 3) Solicitação direta de um setor."
-    },
-    {
-      "Entradas": "Necessidade de atualização identificada",
-      "Atividade": "Comunicar Mudança Identificada ao Setor Responsável",
-      "Ator/Área responsável": "Analista da Ouvidoria",
-      "Recursos de TI": "Sistema SEI",
-      "Produtos": "Processo SEI com comunicado enviado ao setor",
-      "Observações": "Esta atividade ocorre apenas quando o processo é iniciado pela Ouvidoria (casos 1 e 2)."
-    },
-    {
-      "Entradas": "Processo SEI com comunicado da Ouvidoria OU Mudança identificada pelo próprio setor",
-      "Atividade": "Solicitar Formalmente a Alteração na Carta de Serviços",
-      "Ator/Área responsável": "Setor Responsável pelo Serviço",
-      "Recursos de TI": "Sistema SEI",
-      "Produtos": "Novo Processo SEI com solicitação de alteração enviado à Ouvidoria",
-      "Observações": "Esta etapa é o ponto de convergência dos três inícios possíveis do processo."
-    },
-    {
-      "Entradas": "Novo Processo SEI com solicitação de alteração",
-      "Atividade": "Analisar Solicitação de Alteração",
-      "Ator/Área responsável": "Analista da Ouvidoria",
-      "Recursos de TI": "Sistema SEI",
-      "Produtos": "Solicitação analisada (completa ou incompleta)",
-      "Observações": "Ponto de decisão: se a solicitação estiver completa, o processo segue; se estiver incompleta, aciona a próxima atividade."
-    },
-    {
-      "Entradas": "Solicitação analisada (incompleta)",
-      "Atividade": "Solicitar Informações Complementares",
-      "Ator/Área responsável": "Analista da Ouvidoria",
-      "Recursos de TI": "Sistema SEI",
-      "Produtos": "Despacho no SEI solicitando complementação",
-      "Observações": "O processo é devolvido ao setor responsável e aguarda reenvio com informações corrigidas, retornando para 'Analisar Solicitação'."
-    },
-    {
-      "Entradas": "Solicitação analisada (completa)",
-      "Atividade": "Realizar Alteração na Carta de Serviços",
-      "Ator/Área responsável": "Analista da Ouvidoria",
-      "Recursos de TI": "Portal da Ouvidoria do TCE-PE",
-      "Produtos": "Texto da Carta de Serviços editado (não publicado)",
-      "Observações": "A alteração é feita no ambiente de edição do portal, preparando para publicação."
-    },
-    {
-      "Entradas": "Texto da Carta de Serviços editado",
-      "Atividade": "Publicar Alteração da Carta de Serviços",
-      "Ator/Área responsável": "Analista da Ouvidoria",
-      "Recursos de TI": "Portal da Ouvidoria do TCE-PE",
-      "Produtos": "Carta de Serviços atualizada e pública",
-      "Observações": "Esta ação torna a mudança visível para o cidadão."
-    },
-    {
-      "Entradas": "Texto da Carta de Serviços editado",
-      "Atividade": "Comunicar Conclusão ao Setor Solicitante",
-      "Ator/Área responsável": "Analista da Ouvidoria",
-      "Recursos de TI": "Sistema SEI",
-      "Produtos": "Despacho de encerramento enviado no processo SEI",
-      "Observações": "Ocorre em paralelo à publicação e encerra a comunicação com o setor."
-    }
-  ]
-}
-    """
 
-  ai_response =  get_chat_completion(process)
+  result = load_type_document(INPUT_PATH)
+  ai_response =  get_chat_completion(result)
+
   # remove markdown
   clean = re.sub(r"```json|```", "", ai_response).strip()
 
