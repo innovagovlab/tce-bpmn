@@ -1,6 +1,7 @@
 import xml.etree.ElementTree as ET
 import json
 import re
+from pathlib import Path
 
 from bpmn_transformer import BpmnTransformer
 
@@ -172,21 +173,40 @@ class BpmnXmlGenerator:
     return f"<?xml version='1.0' encoding='utf-8'?>\n{xml_bytes}"
 
 
-if __name__ == "__main__":
-  # Exemplo de processo (planilha transformada em JSON)
+def generate_bpmn_from_input(
+  input_path: str,
+  output_path: str,
+  layout_js_path: str = LAYOUT_JS_PATH,
+) -> str:
+  """
+  Executa o pipeline completo:
+  1) Lê e trata documento de entrada
+  2) Solicita estrutura de processo para IA
+  3) Converte para XML BPMN
+  4) Aplica auto-layout
+  5) Salva no caminho final
 
-  result = load_type_document(INPUT_PATH)
-  ai_response =  get_chat_completion(result)
+  Retorna o caminho absoluto do arquivo salvo.
+  """
+  result = load_type_document(input_path)
+  ai_response = get_chat_completion(result)
 
-  # remove markdown
+  # Remove cercas markdown caso a IA devolva bloco ```json
   clean = re.sub(r"```json|```", "", ai_response).strip()
-
   data = json.loads(clean)
 
   xml_generator = BpmnXmlGenerator()
   bpmn_xml = xml_generator.create_bpmn_xml(load_process(data))
+  layouted_xml = apply_layout(bpmn_xml, layout_js_path)
 
-  layouted_xml = apply_layout(bpmn_xml, LAYOUT_JS_PATH)
-  
-  with open(FINAL_BPMN_PATH, "w", encoding="utf-8") as f:
+  output_file = Path(output_path)
+  output_file.parent.mkdir(parents=True, exist_ok=True)
+  with open(output_file, "w", encoding="utf-8") as f:
     f.write(layouted_xml)
+
+  return str(output_file.resolve())
+
+
+if __name__ == "__main__":
+  # Exemplo de uso por linha de comando
+  generate_bpmn_from_input(INPUT_PATH, FINAL_BPMN_PATH, LAYOUT_JS_PATH)
