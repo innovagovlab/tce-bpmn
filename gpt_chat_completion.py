@@ -42,3 +42,4 @@ def get_chat_completion(prompt: str):
         return response.choices[0].message.content
     except Exception as e:
         print("Erro ao buscar resposta de IA: ", e)
+        raise

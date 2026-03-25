@@ -68,7 +68,7 @@ Certifique-se de que o arquivo `.env` está configurado corretamente com as vari
 Para executar o projeto, utilize o script principal `bpmn_parser.py`:
 
 ```bash
-python main.py
+python bpmn_parser.py
 ```
 
 O script `bpmn_parser.py` é o ponto de entrada para o fluxo de trabalho de experimentação. Ele realiza as seguintes etapas principais:
@@ -79,6 +79,21 @@ O script `bpmn_parser.py` é o ponto de entrada para o fluxo de trabalho de expe
 3.  Armazena o resultado em `output/arquivo.bpmn`
 
 A pasta `utils/` fornece funções auxiliares utilizadas pelos demais scripts.
+
+### Execução com Interface Gráfica (GUI)
+
+Também é possível usar uma interface gráfica para selecionar o arquivo de entrada e escolher onde salvar o resultado final `.bpmn`:
+
+```bash
+python bpmn_gui.py
+```
+
+Fluxo da GUI:
+
+1. Seleciona um arquivo de entrada (`.txt`, `.json`, `.md`, `.docx`, `.xlsx`).
+2. Processa o conteúdo com IA e transforma em BPMN.
+3. Aplica auto-layout via `auto-layout-process/layout.js`.
+4. Salva o arquivo `.bpmn` no local escolhido.
 
 ## Observações
 
