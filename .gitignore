@@ -11,3 +11,6 @@ venv/
 .venv
 
 output/
+build/
+_internal
+*.spec

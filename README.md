@@ -95,6 +95,53 @@ Fluxo da GUI:
 3. Aplica auto-layout via `auto-layout-process/layout.js`.
 4. Salva o arquivo `.bpmn` no local escolhido.
 
+## Gerando executável `.exe` da GUI (Windows)
+
+Para empacotar a interface gráfica em um executável, use o PyInstaller com `bpmn_gui.py` como ponto de entrada.
+
+### 1. Pré-requisitos
+
+- Ambiente virtual Python ativado.
+- Dependências Python instaladas (`requirements.txt`).
+- Node.js instalado.
+- Dependências do layout instaladas:
+
+```bash
+cd auto-layout-process
+npm install
+cd ..
+```
+
+### 2. Instalar PyInstaller
+
+```bash
+pip install pyinstaller
+```
+
+### 3. Gerar o executável da GUI
+
+No diretório raiz do projeto, execute:
+
+```bash
+pyinstaller --noconfirm --windowed --onedir --name BPMNGen ^
+  --add-data ".env;." ^
+  --add-data "utils/prompts;utils/prompts" ^
+  --add-data "auto-layout-process;auto-layout-process" ^
+  bpmn_gui.py
+```
+
+Saída esperada:
+
+- Executável em `dist/BPMNGen/BPMNGen.exe`
+
+### 4. Arquivos necessários junto ao `.exe`
+
+- O `.env` ja fica empacotado pelo comando acima (`--add-data ".env;."`).
+- Opcionalmente, voce pode manter um `.env` ao lado do `.exe` para sobrescrever variaveis sem recompilar.
+- Pasta `auto-layout-process` (incluindo `node_modules`, quando necessario).
+
+Observação: a aplicação chama o comando `node` em runtime para aplicar auto-layout. Por isso, a máquina que executa o `.exe` precisa ter Node.js disponível no `PATH`.
+
 ## Observações
 
 - Certifique-se de que o Python e o pip estão atualizados.
