@@ -56,6 +56,43 @@ with open(EXAMPLE_PATH, "r", encoding="utf-8") as f:
     example_prompt = f.read()
 
 
+PROCESS_JSON_SCHEMA = {
+    "name": "bpmn_process_response",
+    "strict": False,
+    "schema": {
+        "type": "object",
+        "properties": {
+            "process": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "string"},
+                        "type": {
+                            "type": "string",
+                            "enum": [
+                                "startEvent",
+                                "endEvent",
+                                "task",
+                                "userTask",
+                                "serviceTask",
+                                "sendTask",
+                                "receiveTask",
+                                "exclusiveGateway",
+                                "parallelGateway",
+                                "inclusiveGateway",
+                            ],
+                        },
+                    },
+                    "required": ["id", "type"],
+                },
+            }
+        },
+        "required": ["process"],
+    },
+}
+
+
 def get_chat_completion(prompt: str) -> dict:
     try:
         api_key = _get_env("API_KEY", "AZURE_OPENAI_API_KEY")
@@ -87,7 +124,10 @@ def get_chat_completion(prompt: str) -> dict:
                 },
             ],
             temperature=0.3,
-            response_format={"type": "json_schema"},
+            response_format={
+                "type": "json_schema",
+                "json_schema": PROCESS_JSON_SCHEMA,
+            },
         )
 
         content = response.choices[0].message.content or ""
