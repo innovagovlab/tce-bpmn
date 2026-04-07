@@ -54,7 +54,8 @@ class BpmnTransformer:
                 "id": element["id"],
                 "type": element["type"],
                 "label": element.get("label"),
-                "lane": element.get("lane")
+                "lane": element.get("lane"),
+                "default_flow": None
             })
 
             gateway_type = element["type"]
@@ -159,7 +160,7 @@ class BpmnTransformer:
 
             if sub.elements:
                 self.add_flow(element["id"], sub.elements[0]["id"])
-                self.add_flow(sub.elements[-1]["id"], join_id)
+                # self.add_flow(sub.elements[-1]["id"], join_id) o add_flow tem o guard de duplicata, então não quebra, mas o fluxo correto já vem do sub.process, então da pra remover essa linha com segurança
 
         return join_id
 

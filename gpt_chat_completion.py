@@ -1,4 +1,6 @@
 import os
+import json
+import re
 import sys
 from pathlib import Path
 from openai import AzureOpenAI
@@ -54,7 +56,7 @@ with open(EXAMPLE_PATH, "r", encoding="utf-8") as f:
     example_prompt = f.read()
 
 
-def get_chat_completion(prompt: str):
+def get_chat_completion(prompt: str) -> dict:
     try:
         api_key = _get_env("API_KEY", "AZURE_OPENAI_API_KEY")
         azure_endpoint = _get_env("AZURE_ENDPOINT", "AZURE_OPENAI_ENDPOINT")
@@ -76,21 +78,21 @@ def get_chat_completion(prompt: str):
             model=os.getenv("DEPLOYMENT_NAME"),  # model = "deployment_name"
             messages=[
                 {
-                    "role": "user",
+                    "role": "system",
                     "content": explanation_prompt,
                 },
                 {
                     "role": "user",
-                    "content": example_prompt,
-                },
-                {
-                    "role": "user",
-                    "content": prompt,
+                    "content": f"{example_prompt}\n\n---\n\nAgora processe o seguinte:\n{prompt}",
                 },
             ],
+            temperature=0.3,
+            response_format={"type": "json_schema"},
         )
 
-        return response.choices[0].message.content
+        content = response.choices[0].message.content or ""
+        clean = re.sub(r"```json|```", "", content).strip()
+        return json.loads(clean)
     except Exception as e:
         print("Erro ao buscar resposta de IA: ", e)
         raise

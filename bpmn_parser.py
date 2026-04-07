@@ -1,10 +1,9 @@
 import xml.etree.ElementTree as ET
-import json
-import re
 import sys
 from pathlib import Path
 
 from bpmn_transformer import BpmnTransformer
+from config import LAYOUT_JS_PATH, FINAL_BPMN_PATH, VALID_TYPES
 
 from utils.load_process import load_process
 from utils.apply_layout import apply_layout
@@ -20,8 +19,19 @@ def _bundle_base_path() -> Path:
 
 BASE_PATH = _bundle_base_path()
 INPUT_PATH = str(BASE_PATH / "input" / "input_example.txt")
-LAYOUT_JS_PATH = str(BASE_PATH / "auto-layout-process" / "layout.js")
-FINAL_BPMN_PATH = str(BASE_PATH / "output" / "arquivo.bpmn")
+DEFAULT_LAYOUT_JS_PATH = str(BASE_PATH / Path(LAYOUT_JS_PATH))
+DEFAULT_FINAL_BPMN_PATH = str(BASE_PATH / Path(FINAL_BPMN_PATH))
+
+REQUIRED_KEYS = {"id", "type"}
+
+
+def validate_process(process: list[dict]) -> None:
+    for i, element in enumerate(process):
+        missing = REQUIRED_KEYS - element.keys()
+        if missing:
+            raise ValueError(f"Elemento {i} esta faltando campos: {missing}")
+        if element["type"] not in VALID_TYPES:
+            raise ValueError(f"Tipo invalido no elemento {i}: {element['type']}")
 
 
 class BpmnXmlGenerator:
@@ -178,7 +188,7 @@ class BpmnXmlGenerator:
 def generate_bpmn_from_input(
     input_path: str,
     output_path: str,
-    layout_js_path: str = LAYOUT_JS_PATH,
+    layout_js_path: str = DEFAULT_LAYOUT_JS_PATH,
 ) -> str:
     """
     Executa o pipeline completo:
@@ -191,14 +201,13 @@ def generate_bpmn_from_input(
     Retorna o caminho absoluto do arquivo salvo.
     """
     result = load_type_document(input_path)
-    ai_response = get_chat_completion(result)
+    data = get_chat_completion(result)
 
-    # Remove cercas markdown caso a IA devolva bloco ```json
-    clean = re.sub(r"```json|```", "", ai_response).strip()
-    data = json.loads(clean)
+    process = load_process(data)
+    validate_process(process)
 
     xml_generator = BpmnXmlGenerator()
-    bpmn_xml = xml_generator.create_bpmn_xml(load_process(data))
+    bpmn_xml = xml_generator.create_bpmn_xml(process)
     layouted_xml = apply_layout(bpmn_xml, layout_js_path)
 
     output_file = Path(output_path)
@@ -211,4 +220,4 @@ def generate_bpmn_from_input(
 
 if __name__ == "__main__":
     # Exemplo de uso por linha de comando
-    generate_bpmn_from_input(INPUT_PATH, FINAL_BPMN_PATH, LAYOUT_JS_PATH)
+    generate_bpmn_from_input(INPUT_PATH, DEFAULT_FINAL_BPMN_PATH, DEFAULT_LAYOUT_JS_PATH)
