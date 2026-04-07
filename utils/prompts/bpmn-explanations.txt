@@ -1,4 +1,26 @@
-A representação JSON do BPMN utiliza algumas sequência de elementos na qual é produzida para descrever o processo. Cada elemento é executado em ordem baseado em sua "posição" baseada no processo a não ser que os gateways especifique o caminho correto.
+A representação JSON do BPMN utiliza uma sequência de elementos produzida para descrever o processo. Cada elemento é executado em ordem baseado em sua "posição" no processo, a não ser que os gateways especifiquem o caminho correto.
+
+## Antes de converter: análise obrigatória
+
+Antes de gerar qualquer elemento JSON, analise a tabela inteira e responda obrigatoriamente:
+
+1. O processo possui mais de um gatilho de início? (Ex: pode possui várias entradas alternativas) → modele um startEvent independente para cada um, separando os diferentes fluxos possíveis.
+
+2. Quando múltiplos startEvent existem e todos convergem diretamente para o mesmo ponto — use apenas os startEvent sequencialmente, o primeiro elemento após eles no array é o ponto de convergência automático
+
+3. Existe alguma atividade que só ocorre sob uma condição? → use exclusiveGateway ou inclusiveGateway.
+
+4. Existe alguma atividade que ocorre ao mesmo tempo ou simultaneamente que outra? → utilize parallelGateway para definir "paths" diferentes.
+
+5. Finais não podem estar contidos em um fluxo de gateway paralelos, ou seja, não podem ser declarados dentro de um path desse tipo de elemento.
+
+5. O fluxo pode retornar a uma etapa anterior? → use exclusiveGateway com next apontando para o id do elemento de destino.
+
+6. Alguma atividade é mencionada mais de uma vez no fluxo? → NUNCA duplique o elemento. Use next com o id já existente para referenciar o elemento.
+
+7. "startEvent" nunca se conecta a outro startEvent. Cada startEvent é independente e conecta apenas ao primeiro elemento não-startEvent que o sucede no array. Nunca gere uma sequência de fluxo entre dois startEvent.
+
+Gateways devem ser inferidos mesmo quando não mencionados explicitamente na tabela. Analise entradas, saídas e observações de cada linha em busca desses padrões.
 
 # Formulação BPMN para a transformação do processo
 
@@ -15,7 +37,7 @@ Tipos de Eventos:
 - 'startEvent': Inicia o processo (pode possuir timerEventDefinition ou messageEventDefinition)
 - 'endEvent': Finaliza o processo (pode possuir messageEventDefinition)
 
-Nomes (label) precisam ser claros e simples (cerca de 2 a 5 palavras)
+Nomes (label) precisam ser claros e simples (cerca de 2 a 5 palavras), nunca devem ser iguais a outros ID's já existentes.
 Raias (lane) precisam ser informadas de acordo com o ator ou responsável da função, ou seja quem irá fazer ou acionar determinada função.
 
 cada item deve ser tratado como um startEvent independente.
@@ -39,7 +61,7 @@ Sempre tente especificar o tipo de task mais específico:
 - Use 'sendTask' para operações de envios automáticos do sistema (emails, notificações, mensagens)
 - Use 'receiveTask' para operações de recebimento automáticos do sistema (espera de mensagens, webhooks)
 - Use 'task' apens se a ação não pode ser declarada fielmente
-Nomes (label) precisam ser claros e simples (cerca de 2 a 5 palavras)
+Nomes (label) precisam ser claros e simples (cerca de 2 a 5 palavras), nunca devem ser iguais a outros ID's já existentes.
 Raias (lane) precisam ser informadas de acordo com o ator ou responsável da função, ou seja quem irá fazer ou acionar determinada função.
 
 ```json

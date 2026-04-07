@@ -4,48 +4,48 @@ A ordem de execução no processo BPMN é determinada pela sequência de element
 Descrição de tabela:
 ```json
 {
-	"Exemplo_1": [
-		{
-		  "Entradas": "Pedido de compra recebido",
-		  "Atividade": "Registrar Pedido no Sistema",
-		  "Ator/Área responsável": "Assistente de Compras",
-		  "Recursos de TI": "ERP Compras",
-		  "Produtos": "Pedido registrado",
-		  "Observações": "Feito imediatamente para controle de estoque."
-		},
-		{
-		  "Entradas": "Pedido registrado",
-		  "Atividade": "Validar Informações do Pedido",
-		  "Ator/Área responsável": "Supervisor de Compras",
-		  "Recursos de TI": "ERP Compras",
-		  "Produtos": "Pedido validado",
-		  "Observações": "Verifica valores e quantidades."
-		},
-		{
-		  "Entradas": "Pedido validado",
-		  "Atividade": "Emitir Ordem de Compra",
-		  "Ator/Área responsável": "Supervisor de Compras",
-		  "Recursos de TI": "ERP Compras",
-		  "Produtos": "Ordem de compra emitida",
-		  "Observações": "Documento formal para fornecedor."
-		},
-		{
-		  "Entradas": "Ordem de compra emitida",
-		  "Atividade": "Enviar Ordem ao Fornecedor",
-		  "Ator/Área responsável": "Assistente de Compras",
-		  "Recursos de TI": "E-mail corporativo",
-		  "Produtos": "Ordem entregue",
-		  "Observações": "Envio digital para evitar uso de papel."
-		},
-		{
-		  "Entradas": "Produto entregue",
-		  "Atividade": "Registrar Entrada no Estoque",
-		  "Ator/Área responsável": "Estoquista",
-		  "Recursos de TI": "Sistema de Estoque",
-		  "Produtos": "Entrada registrada",
-		  "Observações": "Atualiza saldo disponível imediatamente."
-		}
-	]
+  "Exemplo_1": [
+    {
+      "Entradas": "Nota fiscal recebida por e-mail",
+      "Atividade": "Receber Nota Fiscal por E-mail",
+      "Ator/Área responsável": "Sistema",
+      "Recursos de TI": "E-mail corporativo",
+      "Produtos": "Nota recebida",
+      "Observações": "Início automático por recebimento de mensagem."
+    },
+    {
+      "Entradas": "Nota fiscal gerada internamente",
+      "Atividade": "Emitir Nota Fiscal Interna",
+      "Ator/Área responsável": "Financeiro",
+      "Recursos de TI": "ERP",
+      "Produtos": "Nota emitida",
+      "Observações": "Início manual pelo financeiro."
+    },
+    {
+      "Entradas": "Nota recebida ou emitida",
+      "Atividade": "Registrar Nota no Sistema",
+      "Ator/Área responsável": "Financeiro",
+      "Recursos de TI": "ERP",
+      "Produtos": "Nota registrada",
+      "Observações": "Ponto de convergência dos dois inícios. Ambos levam diretamente aqui sem tasks intermediárias."
+    },
+    {
+      "Entradas": "Nota registrada",
+      "Atividade": "Validar Nota Fiscal",
+      "Ator/Área responsável": "Financeiro",
+      "Recursos de TI": "ERP",
+      "Produtos": "Nota validada",
+      "Observações": ""
+    },
+    {
+      "Entradas": "Nota validada",
+      "Atividade": "Efetuar Pagamento",
+      "Ator/Área responsável": "Financeiro",
+      "Recursos de TI": "Sistema Bancário",
+      "Produtos": "Pagamento efetuado",
+      "Observações": ""
+    }
+  ]
 }
 ```
 
@@ -55,45 +55,40 @@ Resultado:
   "process": [
     {
       "type": "startEvent",
-      "id": "compras_start",
-      "label": "Pedido Recebido",
-      "lane": "Assistente de Compras"
+      "id": "nf_start1",
+      "label": "Nota Recebida por E-mail",
+      "lane": "Sistema",
+      "eventDefinition": "messageEventDefinition"
+    },
+    {
+      "type": "startEvent",
+      "id": "nf_start2",
+      "label": "Nota Emitida Internamente",
+      "lane": "Financeiro"
     },
     {
       "type": "userTask",
-      "id": "compras_task1",
-      "label": "Registrar Pedido",
-      "lane": "Assistente de Compras"
+      "id": "nf_task1",
+      "label": "Registrar Nota no Sistema",
+      "lane": "Financeiro"
     },
     {
       "type": "userTask",
-      "id": "compras_task2",
-      "label": "Validar Pedido",
-      "lane": "Supervisor de Compras"
+      "id": "nf_task2",
+      "label": "Validar Nota Fiscal",
+      "lane": "Financeiro"
     },
     {
-      "type": "userTask",
-      "id": "compras_task3",
-      "label": "Emitir Ordem Compra",
-      "lane": "Supervisor de Compras"
-    },
-    {
-      "type": "sendTask",
-      "id": "compras_task4",
-      "label": "Enviar Ordem",
-      "lane": "Assistente de Compras"
-    },
-    {
-      "type": "userTask",
-      "id": "compras_task5",
-      "label": "Registrar Entrada Estoque",
-      "lane": "Estoquista"
+      "type": "serviceTask",
+      "id": "nf_task3",
+      "label": "Efetuar Pagamento",
+      "lane": "Financeiro"
     },
     {
       "type": "endEvent",
-      "id": "compras_end",
-      "label": "Concluir Compras",
-      "lane": "Estoquista"
+      "id": "nf_end",
+      "label": "Pagamento Efetuado",
+      "lane": "Financeiro"
     }
   ]
 }
@@ -104,212 +99,89 @@ Resultado:
 Descrição de tabela:
 ```json
 {
-	"Exemplo_2": [
-		{
-		  "Entradas": "Solicitação de contratação",
-		  "Atividade": "Receber Pedido de Contratação",
-		  "Ator/Área responsável": "Assistente de RH",
-		  "Recursos de TI": "Sistema RH",
-		  "Produtos": "Pedido recebido",
-		  "Observações": "Solicitação feita pelo gestor da área."
-		},
-		{
-		  "Entradas": "Pedido recebido",
-		  "Atividade": "Publicar Vaga",
-		  "Ator/Área responsável": "Analista de RH",
-		  "Recursos de TI": "Plataforma de vagas",
-		  "Produtos": "Vaga anunciada",
-		  "Observações": "Publicada em portais online e rede interna."
-		},
-		{
-		  "Entradas": "Candidaturas recebidas",
-		  "Atividade": "Triar Currículos",
-		  "Ator/Área responsável": "Analista de RH",
-		  "Recursos de TI": "Sistema RH",
-		  "Produtos": "Lista de candidatos",
-		  "Observações": "Seleção inicial baseada em requisitos da vaga."
-		},
-		{
-		  "Entradas": "Lista de candidatos",
-		  "Atividade": "Agendar Entrevistas",
-		  "Ator/Área responsável": "Assistente de RH",
-		  "Recursos de TI": "Agenda online",
-		  "Produtos": "Entrevistas marcadas",
-		  "Observações": "Contato por telefone ou e-mail."
-		},
-		{
-		  "Entradas": "Entrevistas realizadas",
-		  "Atividade": "Selecionar Candidato",
-		  "Ator/Área responsável": "Analista de RH",
-		  "Recursos de TI": "Sistema RH",
-		  "Produtos": "Nome do candidato aprovado",
-		  "Observações": "Escolha feita pelo gestor e RH."
-		}
-	]
-}
-```
-
-Resultado:
-```json
-{
-	"process": [
+  "Exemplo_2": [
     {
-      "type": "startEvent",
-      "id": "rh_start",
-      "label": "Solicitação Contratação",
-      "lane": "Assistente de RH"
+      "Entradas": "Solicitação de férias enviada",
+      "Atividade": "Registrar Solicitação de Férias",
+      "Ator/Área responsável": "Funcionário",
+      "Recursos de TI": "Portal RH",
+      "Produtos": "Solicitação registrada",
+      "Observações": ""
     },
     {
-      "type": "userTask",
-      "id": "rh_task1",
-      "label": "Receber Pedido",
-      "lane": "Assistente de RH"
+      "Entradas": "Solicitação registrada",
+      "Atividade": "Analisar Solicitação",
+      "Ator/Área responsável": "Gestor",
+      "Recursos de TI": "Portal RH",
+      "Produtos": "Solicitação analisada",
+      "Observações": "Ponto de decisão: aprovado ou reprovado."
     },
     {
-      "type": "userTask",
-      "id": "rh_task2",
-      "label": "Publicar Vaga",
-      "lane": "Analista de RH"
+      "Entradas": "Aprovado",
+      "Atividade": "Lançar Férias no Sistema",
+      "Ator/Área responsável": "RH",
+      "Recursos de TI": "ERP",
+      "Produtos": "Férias lançadas",
+      "Observações": ""
     },
     {
-      "type": "receiveTask",
-      "id": "rh_task3",
-      "label": "Receber Candidaturas",
-      "lane": "Analista de RH"
+      "Entradas": "Férias lançadas",
+      "Atividade": "Notificar Funcionário e Atualizar Escala",
+      "Ator/Área responsável": "RH / Sistema",
+      "Recursos de TI": "ERP / E-mail",
+      "Produtos": "Funcionário notificado e escala atualizada",
+      "Observações": "Notificação ao funcionário e atualização da escala ocorrem em paralelo. Após AMBAS concluírem, o processo encerra."
     },
     {
-      "type": "userTask",
-      "id": "rh_task4",
-      "label": "Triar Currículos",
-      "lane": "Analista de RH"
-    },
-    {
-      "type": "userTask",
-      "id": "rh_task5",
-      "label": "Agendar Entrevistas",
-      "lane": "Assistente de RH"
-    },
-    {
-      "type": "userTask",
-      "id": "rh_task6",
-      "label": "Selecionar Candidato",
-      "lane": "Analista de RH"
-    },
-    {
-      "type": "endEvent",
-      "id": "rh_end",
-      "label": "Contratação Realizada",
-      "lane": "Analista de RH"
+      "Entradas": "Reprovado",
+      "Atividade": "Notificar Reprovação",
+      "Ator/Área responsável": "Sistema",
+      "Recursos de TI": "E-mail",
+      "Produtos": "Funcionário notificado",
+      "Observações": ""
     }
   ]
 }
 ```
 
----
-
-Descrição de tabela:
-```json
-{
-	"Exemplo_3": [
-		{
-		  "Entradas": "Chamado técnico aberto",
-		  "Atividade": "Registrar Chamado no Sistema",
-		  "Ator/Área responsável": "Analista de Suporte",
-		  "Recursos de TI": "Sistema Helpdesk",
-		  "Produtos": "Chamado registrado",
-		  "Observações": "Cliente descreve problema ou solicitação."
-		},
-		{
-		  "Entradas": "Chamado registrado",
-		  "Atividade": "Diagnosticar Problema",
-		  "Ator/Área responsável": "Analista de Suporte",
-		  "Recursos de TI": "Ferramentas de diagnóstico",
-		  "Produtos": "Relatório de diagnóstico",
-		  "Observações": "Pode ser remoto ou presencial."
-		},
-		{
-		  "Entradas": "Diagnóstico realizado",
-		  "Atividade": "Implementar Solução",
-		  "Ator/Área responsável": "Técnico de TI",
-		  "Recursos de TI": "Ferramentas de TI",
-		  "Produtos": "Problema resolvido",
-		  "Observações": "Solução aplicada conforme padrão técnico."
-		},
-		{
-		  "Entradas": "Problema resolvido",
-		  "Atividade": "Encerrar Chamado",
-		  "Ator/Área responsável": "Analista de Suporte",
-		  "Recursos de TI": "Sistema Helpdesk",
-		  "Produtos": "Chamado encerrado",
-		  "Observações": "Registro final e avaliação de satisfação."
-		},
-		{
-		  "Entradas": "Chamado encerrado",
-		  "Atividade": "Enviar Relatório ao Solicitante",
-		  "Ator/Área responsável": "Analista de Suporte",
-		  "Recursos de TI": "E-mail corporativo",
-		  "Produtos": "Relatório enviado",
-		  "Observações": "Comunicação final ao cliente interno."
-		}
-	]
-}
-```
-
 Resultado:
 ```json
 {
-	"process": [
+  "process": [
     {
       "type": "startEvent",
-      "id": "ti_start",
-      "label": "Chamado Aberto",
-      "lane": "Analista de Suporte"
+      "id": "ferias_start",
+      "label": "Solicitação Enviada",
+      "lane": "Funcionário",
+      "eventDefinition": "messageEventDefinition"
     },
     {
       "type": "userTask",
-      "id": "ti_task1",
-      "label": "Registrar Chamado",
-      "lane": "Analista de Suporte"
+      "id": "ferias_task1",
+      "label": "Registrar Solicitação",
+      "lane": "Funcionário"
     },
     {
       "type": "userTask",
-      "id": "ti_task2",
-      "label": "Diagnosticar Problema",
-      "lane": "Analista de Suporte"
+      "id": "ferias_task2",
+      "label": "Analisar Solicitação",
+      "lane": "Gestor"
     },
     {
       "type": "exclusiveGateway",
-      "id": "ti_gateway1",
-      "label": "Problema Resolvido?",
+      "id": "ferias_gw1",
+      "label": "Férias Aprovadas?",
+      "lane": "Gestor",
       "has_join": false,
-      "lane": "Analista de Suporte",
       "branches": [
         {
           "condition": "Sim",
           "path": [
             {
               "type": "serviceTask",
-              "id": "ti_task3",
-              "label": "Implementar Solução",
-              "lane": "Técnico de TI"
-            },
-            {
-              "type": "userTask",
-              "id": "ti_task4",
-              "label": "Encerrar Chamado",
-              "lane": "Analista de Suporte"
-            },
-            {
-              "type": "sendTask",
-              "id": "ti_task5",
-              "label": "Enviar Relatório",
-              "lane": "Analista de Suporte"
-            },
-            {
-              "type": "endEvent",
-              "id": "ti_end",
-              "label": "Encerrado",
-              "lane": "Analista de Suporte"
+              "id": "ferias_task3",
+              "label": "Lançar Férias no ERP",
+              "lane": "RH"
             }
           ]
         },
@@ -317,19 +189,168 @@ Resultado:
           "condition": "Não",
           "path": [
             {
-              "type": "userTask",
-              "id": "ti_task6",
-              "label": "Solicitar Mais Dados",
-              "lane": "Analista de Suporte"
+              "type": "sendTask",
+              "id": "ferias_task5",
+              "label": "Notificar Reprovação",
+              "lane": "Sistema"
             },
             {
-              "type": "userTask",
-              "id": "ti_task2_repeat",
-              "label": "Reavaliar Problema",
-              "lane": "Analista de Suporte"
+              "type": "endEvent",
+              "id": "ferias_end_nok",
+              "label": "Solicitação Reprovada",
+              "lane": "Sistema"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "parallelGateway",
+      "id": "ferias_gw_paralelo",
+      "lane": "RH",
+      "branches": [
+        [
+          {
+            "type": "sendTask",
+            "id": "ferias_task4a",
+            "label": "Notificar Funcionário",
+            "lane": "Sistema"
+          }
+        ],
+        [
+          {
+            "type": "serviceTask",
+            "id": "ferias_task4b",
+            "label": "Atualizar Escala",
+            "lane": "RH"
+          }
+        ]
+      ]
+    },
+    {
+      "type": "endEvent",
+      "id": "ferias_end_ok",
+      "label": "Férias Concluídas",
+      "lane": "RH"
+    }
+  ]
+}
+```
+
+---
+
+Descrição de tabela:
+```json
+{
+  "Exemplo_3": [
+    {
+      "Entradas": "Pedido de reembolso submetido",
+      "Atividade": "Registrar Pedido de Reembolso",
+      "Ator/Área responsável": "Funcionário",
+      "Recursos de TI": "Portal Financeiro",
+      "Produtos": "Pedido registrado",
+      "Observações": ""
+    },
+    {
+      "Entradas": "Pedido registrado",
+      "Atividade": "Verificar Documentação",
+      "Ator/Área responsável": "Financeiro",
+      "Recursos de TI": "Portal Financeiro",
+      "Produtos": "Documentação verificada",
+      "Observações": "Ponto de decisão: documentação completa ou incompleta."
+    },
+    {
+      "Entradas": "Documentação incompleta",
+      "Atividade": "Solicitar Documentação Complementar",
+      "Ator/Área responsável": "Financeiro",
+      "Recursos de TI": "E-mail",
+      "Produtos": "Solicitação enviada",
+      "Observações": "Retorna para Verificar Documentação após reenvio."
+    },
+    {
+      "Entradas": "Documentação completa",
+      "Atividade": "Aprovar Reembolso",
+      "Ator/Área responsável": "Gestor Financeiro",
+      "Recursos de TI": "Portal Financeiro",
+      "Produtos": "Reembolso aprovado",
+      "Observações": ""
+    },
+    {
+      "Entradas": "Reembolso aprovado",
+      "Atividade": "Efetuar Reembolso",
+      "Ator/Área responsável": "Financeiro",
+      "Recursos de TI": "Sistema Bancário",
+      "Produtos": "Reembolso efetuado",
+      "Observações": ""
+    }
+  ]
+}
+```
+
+Resultado:
+```json
+{
+  "process": [
+    {
+      "type": "startEvent",
+      "id": "reimb_start",
+      "label": "Pedido Submetido",
+      "lane": "Funcionário",
+      "eventDefinition": "messageEventDefinition"
+    },
+    {
+      "type": "userTask",
+      "id": "reimb_task1",
+      "label": "Registrar Pedido",
+      "lane": "Funcionário"
+    },
+    {
+      "type": "userTask",
+      "id": "reimb_task2",
+      "label": "Verificar Documentação",
+      "lane": "Financeiro"
+    },
+    {
+      "type": "exclusiveGateway",
+      "id": "reimb_gw1",
+      "label": "Documentação Completa?",
+      "lane": "Financeiro",
+      "has_join": false,
+      "branches": [
+        {
+          "condition": "Não",
+          "path": [
+            {
+              "type": "sendTask",
+              "id": "reimb_task3",
+              "label": "Solicitar Documentação",
+              "lane": "Financeiro"
             }
           ],
-          "next": "ti_gateway1"
+          "next": "reimb_task2"
+        },
+        {
+          "condition": "Sim",
+          "path": [
+            {
+              "type": "userTask",
+              "id": "reimb_task4",
+              "label": "Aprovar Reembolso",
+              "lane": "Gestor Financeiro"
+            },
+            {
+              "type": "serviceTask",
+              "id": "reimb_task5",
+              "label": "Efetuar Reembolso",
+              "lane": "Financeiro"
+            },
+            {
+              "type": "endEvent",
+              "id": "reimb_end",
+              "label": "Reembolso Concluído",
+              "lane": "Financeiro"
+            }
+          ]
         }
       ]
     }
@@ -342,250 +363,46 @@ Resultado:
 Descrição de tabela:
 ```json
 {
-	"Exemplo_4": [
-		{
-		  "Entradas": "Consulta recebida por telefone",
-		  "Atividade": "Registrar Consulta",
-		  "Ator/Área responsável": "Atendente",
-		  "Recursos de TI": "Sistema CRM",
-		  "Produtos": "Consulta registrada",
-		  "Observações": "Permite acompanhar histórico do cliente."
-		},
-		{
-		  "Entradas": "Consulta registrada",
-		  "Atividade": "Analisar Solicitação",
-		  "Ator/Área responsável": "Supervisor de Atendimento",
-		  "Recursos de TI": "Sistema CRM",
-		  "Produtos": "Solicitação analisada",
-		  "Observações": "Classificação por tipo de demanda."
-		},
-		{
-		  "Entradas": "Solicitação analisada",
-		  "Atividade": "Encaminhar para Área Resolutiva",
-		  "Ator/Área responsável": "Atendente",
-		  "Recursos de TI": "Sistema CRM",
-		  "Produtos": "Solicitação encaminhada",
-		  "Observações": "Direcionado ao setor responsável."
-		},
-		{
-		  "Entradas": "Resposta pronta",
-		  "Atividade": "Retornar ao Cliente",
-		  "Ator/Área responsável": "Atendente",
-		  "Recursos de TI": "Telefone / E-mail",
-		  "Produtos": "Resposta entregue",
-		  "Observações": "Comunicação direta conforme preferência do cliente."
-		},
-		{
-		  "Entradas": "Atendimento concluído",
-		  "Atividade": "Atualizar Status no Sistema",
-		  "Ator/Área responsável": "Atendente",
-		  "Recursos de TI": "Sistema CRM",
-		  "Produtos": "Status atualizado",
-		  "Observações": "Encerramento do atendimento."
-		}
-	]
-}
-```
-
-Resultado:
-```json
-{
-	"process": [
+  "Exemplo_4": [
     {
-      "type": "startEvent",
-      "id": "ac_start",
-      "label": "Consulta Cliente",
-      "lane": "Atendente"
+      "Entradas": "Contrato assinado",
+      "Atividade": "Registrar Novo Funcionário",
+      "Ator/Área responsável": "RH",
+      "Recursos de TI": "ERP",
+      "Produtos": "Funcionário registrado",
+      "Observações": ""
     },
     {
-      "type": "userTask",
-      "id": "ac_task1",
-      "label": "Registrar Consulta",
-      "lane": "Atendente"
+      "Entradas": "Funcionário registrado",
+      "Atividade": "Preparar Acesso e Kit de Boas-vindas",
+      "Ator/Área responsável": "TI / RH",
+      "Recursos de TI": "AD / Portal RH",
+      "Produtos": "Acesso criado e kit preparado",
+      "Observações": "Criação de acesso aos sistemas e preparação do kit de boas-vindas ocorrem em paralelo. Após AMBAS concluírem, o funcionário é integrado."
     },
     {
-      "type": "userTask",
-      "id": "ac_task2",
-      "label": "Analisar Solicitação",
-      "lane": "Supervisor de Atendimento"
+      "Entradas": "Acesso criado e kit preparado",
+      "Atividade": "Realizar Integração do Funcionário",
+      "Ator/Área responsável": "RH",
+      "Recursos de TI": "Portal RH",
+      "Produtos": "Funcionário integrado",
+      "Observações": ""
     },
     {
-      "type": "userTask",
-      "id": "ac_task3",
-      "label": "Encaminhar Área",
-      "lane": "Atendente"
+      "Entradas": "Funcionário integrado",
+      "Atividade": "Documentação completa?",
+      "Ator/Área responsável": "RH",
+      "Recursos de TI": "ERP",
+      "Produtos": "Decisão",
+      "Observações": "Se incompleta, solicitar documentos pendentes e retornar para verificação. Se completa, encerrar."
     },
     {
-      "type": "receiveTask",
-      "id": "ac_task4",
-      "label": "Receber Resposta",
-      "lane": "Atendente"
-    },
-    {
-      "type": "sendTask",
-      "id": "ac_task5",
-      "label": "Retornar Cliente",
-      "lane": "Atendente"
-    },
-    {
-      "type": "serviceTask",
-      "id": "ac_task6",
-      "label": "Atualizar Status",
-      "lane": "Atendente"
-    },
-    {
-      "type": "endEvent",
-      "id": "ac_end",
-      "label": "Atendimento Concluído",
-      "lane": "Atendente"
-    }
-  ]
-}
-```
-
----
-
-Descrição de tabela:
-```json
-{
-	"Exemplo_5": [
-		{
-		  "Entradas": "Solicitação de manutenção",
-		  "Atividade": "Registrar Solicitação no Sistema",
-		  "Ator/Área responsável": "Assistente de Manutenção",
-		  "Recursos de TI": "Sistema de Ordens",
-		  "Produtos": "Solicitação registrada",
-		  "Observações": "Pedido feito via formulário online."
-		},
-		{
-		  "Entradas": "Solicitação registrada",
-		  "Atividade": "Avaliar Necessidade de Reparos",
-		  "Ator/Área responsável": "Técnico de Manutenção",
-		  "Recursos de TI": "Sistema de Ordens",
-		  "Produtos": "Avaliação realizada",
-		  "Observações": "Inspeção presencial feita."
-		},
-		{
-		  "Entradas": "Avaliação realizada",
-		  "Atividade": "Gerar Ordem de Serviço",
-		  "Ator/Área responsável": "Supervisor de Manutenção",
-		  "Recursos de TI": "Sistema de Ordens",
-		  "Produtos": "OS emitida",
-		  "Observações": "Documento interno para execução."
-		},
-		{
-		  "Entradas": "OS emitida",
-		  "Atividade": "Executar Reparo",
-		  "Ator/Área responsável": "Técnico de Manutenção",
-		  "Recursos de TI": "Ferramentas manuais",
-		  "Produtos": "Reparos concluídos",
-		  "Observações": "Conforme especificação técnica."
-		},
-		{
-		  "Entradas": "Reparos concluídos",
-		  "Atividade": "Encerrar OS",
-		  "Ator/Área responsável": "Supervisor de Manutenção",
-		  "Recursos de TI": "Sistema de Ordens",
-		  "Produtos": "OS encerrada",
-		  "Observações": "Registro final e arquivamento."
-		}
-	]
-}
-```
-
-Resultado:
-```json
-{
-	"process": [
-    {
-      "type": "startEvent",
-      "id": "mp_start",
-      "label": "Solicitação Manutenção",
-      "lane": "Assistente de Manutenção"
-    },
-    {
-      "type": "userTask",
-      "id": "mp_task1",
-      "label": "Registrar Solicitação",
-      "lane": "Assistente de Manutenção"
-    },
-    {
-      "type": "userTask",
-      "id": "mp_task2",
-      "label": "Avaliar Reparos",
-      "lane": "Técnico de Manutenção"
-    },
-    {
-      "type": "userTask",
-      "id": "mp_task3",
-      "label": "Gerar OS",
-      "lane": "Supervisor de Manutenção"
-    },
-    {
-      "type": "serviceTask",
-      "id": "mp_task4",
-      "label": "Executar Reparo",
-      "lane": "Técnico de Manutenção"
-    },
-    {
-      "type": "userTask",
-      "id": "mp_task5",
-      "label": "Encerrar OS",
-      "lane": "Supervisor de Manutenção"
-    },
-    {
-      "type": "endEvent",
-      "id": "mp_end",
-      "label": "Manutenção Concluída",
-      "lane": "Supervisor de Manutenção"
-    }
-  ]
-}
-```
-
-Descrição da tabela:
-```json
-{
-  "Exemplo_6": [
-    {
-      "Entradas": "Usuário abre chamado no portal; Monitoramento detecta falha; Gestor reporta incidente",
-      "Atividade": "Registrar Incidente no Sistema",
-      "Ator/Área responsável": "Central de Suporte",
-      "Recursos de TI": "Sistema de Help Desk",
-      "Produtos": "Incidente registrado",
-      "Observações": "O incidente pode ser detectado por três fontes diferentes."
-    },
-    {
-      "Entradas": "Incidente registrado",
-      "Atividade": "Analisar Incidente",
-      "Ator/Área responsável": "Analista de Suporte",
-      "Recursos de TI": "Sistema de Help Desk",
-      "Produtos": "Diagnóstico inicial",
-      "Observações": "Avaliação preliminar da causa."
-    },
-    {
-      "Entradas": "Diagnóstico inicial",
-      "Atividade": "Definir Estratégia de Resolução",
-      "Ator/Área responsável": "Analista de Suporte",
-      "Recursos de TI": "Sistema de Help Desk",
-      "Produtos": "Plano de ação definido",
-      "Observações": "Pode envolver correção imediata ou escalonamento."
-    },
-    {
-      "Entradas": "Plano de ação definido",
-      "Atividade": "Executar Correção",
-      "Ator/Área responsável": "Equipe de Infraestrutura",
-      "Recursos de TI": "Ferramentas de Administração",
-      "Produtos": "Problema resolvido",
-      "Observações": "Correção técnica aplicada."
-    },
-    {
-      "Entradas": "Problema resolvido",
-      "Atividade": "Encerrar Incidente",
-      "Ator/Área responsável": "Central de Suporte",
-      "Recursos de TI": "Sistema de Help Desk",
-      "Produtos": "Incidente encerrado",
-      "Observações": "Usuário e gestor são notificados."
+      "Entradas": "Documentação incompleta",
+      "Atividade": "Solicitar Documentos Pendentes",
+      "Ator/Área responsável": "RH",
+      "Recursos de TI": "E-mail",
+      "Produtos": "Solicitação enviada",
+      "Observações": "Retorna para verificação de documentação."
     }
   ]
 }
@@ -597,57 +414,251 @@ Resultado:
   "process": [
     {
       "type": "startEvent",
-      "id": "it_start1",
-      "label": "Chamado do Usuário",
-      "lane": "Central de Suporte",
+      "id": "onb_start",
+      "label": "Contrato Assinado",
+      "lane": "RH",
       "eventDefinition": "messageEventDefinition"
     },
     {
+      "type": "userTask",
+      "id": "onb_task1",
+      "label": "Registrar Funcionário",
+      "lane": "RH"
+    },
+    {
+      "type": "parallelGateway",
+      "id": "onb_gw_paralelo",
+      "lane": "RH",
+      "branches": [
+        [
+          {
+            "type": "serviceTask",
+            "id": "onb_task2a",
+            "label": "Criar Acesso aos Sistemas",
+            "lane": "TI"
+          }
+        ],
+        [
+          {
+            "type": "userTask",
+            "id": "onb_task2b",
+            "label": "Preparar Kit Boas-vindas",
+            "lane": "RH"
+          }
+        ]
+      ]
+    },
+    {
+      "type": "userTask",
+      "id": "onb_task3",
+      "label": "Realizar Integração",
+      "lane": "RH"
+    },
+    {
+      "type": "exclusiveGateway",
+      "id": "onb_gw1",
+      "label": "Documentação Completa?",
+      "lane": "RH",
+      "has_join": false,
+      "branches": [
+        {
+          "condition": "Não",
+          "path": [
+            {
+              "type": "sendTask",
+              "id": "onb_task4",
+              "label": "Solicitar Documentos Pendentes",
+              "lane": "RH"
+            }
+          ],
+          "next": "onb_task3"
+        },
+        {
+          "condition": "Sim",
+          "path": [
+            {
+              "type": "endEvent",
+              "id": "onb_end",
+              "label": "Onboarding Concluído",
+              "lane": "RH"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+Descrição de tabela:
+```json
+{
+  "Exemplo_5": [
+    {
+      "Entradas": "Alerta automático do sistema",
+      "Atividade": "Detectar Incidente Automaticamente",
+      "Ator/Área responsável": "Sistema de Monitoramento",
+      "Recursos de TI": "SIEM",
+      "Produtos": "Incidente detectado",
+      "Observações": "Início automático por alerta do sistema."
+    },
+    {
+      "Entradas": "Usuário relata problema",
+      "Atividade": "Receber Relato do Usuário",
+      "Ator/Área responsável": "Central de Suporte",
+      "Recursos de TI": "CRM",
+      "Produtos": "Relato recebido",
+      "Observações": "Início por demanda externa."
+    },
+    {
+      "Entradas": "Incidente detectado ou relato recebido",
+      "Atividade": "Registrar Incidente",
+      "Ator/Área responsável": "Central de Suporte",
+      "Recursos de TI": "Sistema de Help Desk",
+      "Produtos": "Incidente registrado",
+      "Observações": "Ponto de convergência dos dois inícios. Após esta task, o fluxo se torna assimétrico: incidentes detectados automaticamente exigem notificação do analista antes de abrir o chamado; relatos abrem o chamado diretamente."
+    },
+    {
+      "Entradas": "Incidente detectado automaticamente",
+      "Atividade": "Notificar Analista de Segurança",
+      "Ator/Área responsável": "Sistema de Monitoramento",
+      "Recursos de TI": "SIEM",
+      "Produtos": "Analista notificado",
+      "Observações": "Ocorre apenas no início 1."
+    },
+    {
+      "Entradas": "Analista notificado OU Relato recebido",
+      "Atividade": "Abrir Chamado de Incidente",
+      "Ator/Área responsável": "Central de Suporte",
+      "Recursos de TI": "Sistema de Help Desk",
+      "Produtos": "Chamado aberto",
+      "Observações": "Ponto de convergência após assimetria."
+    },
+    {
+      "Entradas": "Chamado aberto",
+      "Atividade": "Investigar e Aplicar Correção",
+      "Ator/Área responsável": "Analista de Segurança / Equipe de TI",
+      "Recursos de TI": "Ferramentas de Análise / TI",
+      "Produtos": "Correção aplicada",
+      "Observações": "Investigação e aplicação de correção ocorrem em paralelo. Após AMBAS concluírem, o chamado é encerrado."
+    },
+    {
+      "Entradas": "Correção aplicada",
+      "Atividade": "Encerrar Chamado e Notificar Usuário",
+      "Ator/Área responsável": "Central de Suporte",
+      "Recursos de TI": "CRM / E-mail",
+      "Produtos": "Chamado encerrado e usuário notificado",
+      "Observações": "Encerramento do chamado e notificação ao usuário ocorrem em paralelo. Após AMBOS concluírem, o processo encerra."
+    }
+  ]
+}
+```
+
+Resultado:
+```json
+{
+  "process": [
+    {
       "type": "startEvent",
-      "id": "it_start2",
-      "label": "Falha Detectada",
-      "lane": "Central de Suporte"
+      "id": "inc_start1",
+      "label": "Alerta do Sistema",
+      "lane": "Sistema de Monitoramento",
+      "eventDefinition": "timerEventDefinition"
     },
     {
       "type": "startEvent",
-      "id": "it_start3",
-      "label": "Incidente Reportado",
+      "id": "inc_start2",
+      "label": "Relato do Usuário",
       "lane": "Central de Suporte",
       "eventDefinition": "messageEventDefinition"
     },
     {
       "type": "userTask",
-      "id": "it_task1",
+      "id": "inc_task_registrar",
       "label": "Registrar Incidente",
       "lane": "Central de Suporte"
     },
     {
-      "type": "userTask",
-      "id": "it_task2",
-      "label": "Analisar Incidente",
-      "lane": "Analista de Suporte"
+      "type": "exclusiveGateway",
+      "id": "inc_gw_origem",
+      "label": "Origem do Incidente?",
+      "lane": "Central de Suporte",
+      "has_join": true,
+      "branches": [
+        {
+          "condition": "Detectado automaticamente",
+          "path": [
+            {
+              "type": "sendTask",
+              "id": "inc_task1",
+              "label": "Notificar Analista",
+              "lane": "Sistema de Monitoramento"
+            }
+          ]
+        },
+        {
+          "condition": "Relatado pelo usuário",
+          "path": []
+        }
+      ]
     },
     {
       "type": "userTask",
-      "id": "it_task3",
-      "label": "Definir Estratégia",
-      "lane": "Analista de Suporte"
-    },
-    {
-      "type": "serviceTask",
-      "id": "it_task4",
-      "label": "Executar Correção",
-      "lane": "Equipe de Infraestrutura"
-    },
-    {
-      "type": "sendTask",
-      "id": "it_task5",
-      "label": "Notificar Encerramento",
+      "id": "inc_task2",
+      "label": "Abrir Chamado",
       "lane": "Central de Suporte"
     },
     {
+      "type": "parallelGateway",
+      "id": "inc_gw_paralelo1",
+      "lane": "Analista de Segurança",
+      "branches": [
+        [
+          {
+            "type": "userTask",
+            "id": "inc_task3",
+            "label": "Investigar Incidente",
+            "lane": "Analista de Segurança"
+          }
+        ],
+        [
+          {
+            "type": "serviceTask",
+            "id": "inc_task4",
+            "label": "Aplicar Correção",
+            "lane": "Equipe de TI"
+          }
+        ]
+      ]
+    },
+    {
+      "type": "parallelGateway",
+      "id": "inc_gw_paralelo2",
+      "lane": "Central de Suporte",
+      "branches": [
+        [
+          {
+            "type": "userTask",
+            "id": "inc_task5",
+            "label": "Encerrar Chamado",
+            "lane": "Central de Suporte"
+          }
+        ],
+        [
+          {
+            "type": "sendTask",
+            "id": "inc_task6",
+            "label": "Notificar Usuário",
+            "lane": "Central de Suporte"
+          }
+        ]
+      ]
+    },
+    {
       "type": "endEvent",
-      "id": "it_end",
+      "id": "inc_end",
       "label": "Incidente Resolvido",
       "lane": "Central de Suporte"
     }
