@@ -5,10 +5,7 @@ from pathlib import Path
 from bpmn_transformer import BpmnTransformer
 from config import LAYOUT_JS_PATH, FINAL_BPMN_PATH, VALID_TYPES
 
-from utils.load_process import load_process
-from utils.apply_layout import apply_layout
 from utils.input_treatment import load_type_document
-from gpt_chat_completion import get_chat_completion
 
 
 def _bundle_base_path() -> Path:
@@ -200,15 +197,10 @@ def generate_bpmn_from_input(
 
     Retorna o caminho absoluto do arquivo salvo.
     """
-    result = load_type_document(input_path)
-    data = get_chat_completion(result)
+    from pipeline import BpmnPipeline
 
-    process = load_process(data)
-    validate_process(process)
-
-    xml_generator = BpmnXmlGenerator()
-    bpmn_xml = xml_generator.create_bpmn_xml(process)
-    layouted_xml = apply_layout(bpmn_xml, layout_js_path)
+    raw_input = load_type_document(input_path)
+    layouted_xml = BpmnPipeline(layout_js_path=layout_js_path).run(raw_input)
 
     output_file = Path(output_path)
     output_file.parent.mkdir(parents=True, exist_ok=True)
@@ -220,4 +212,6 @@ def generate_bpmn_from_input(
 
 if __name__ == "__main__":
     # Exemplo de uso por linha de comando
-    generate_bpmn_from_input(INPUT_PATH, DEFAULT_FINAL_BPMN_PATH, DEFAULT_LAYOUT_JS_PATH)
+    generate_bpmn_from_input(
+        INPUT_PATH, DEFAULT_FINAL_BPMN_PATH, DEFAULT_LAYOUT_JS_PATH
+    )
