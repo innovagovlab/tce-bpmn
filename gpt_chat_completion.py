@@ -2,8 +2,9 @@ import os
 import json
 import re
 import sys
+import time
 from pathlib import Path
-from openai import AzureOpenAI
+from openai import AzureOpenAI, RateLimitError
 from dotenv import load_dotenv
 
 
@@ -43,6 +44,20 @@ def _get_env(name: str, *aliases: str) -> str | None:
         if value:
             return value
     return None
+
+
+def _get_retries_from_env(default: int = 3) -> int:
+    raw = _get_env("CHAT_COMPLETION_RETRIES", "OPENAI_RETRIES", "AZURE_OPENAI_RETRIES")
+    if not raw:
+        return default
+
+    try:
+        parsed = int(raw)
+        if parsed < 1:
+            return default
+        return parsed
+    except ValueError:
+        return default
 
 
 _load_env_files()
@@ -93,46 +108,61 @@ PROCESS_JSON_SCHEMA = {
 }
 
 
-def get_chat_completion(prompt: str) -> dict:
-    try:
-        api_key = _get_env("API_KEY", "AZURE_OPENAI_API_KEY")
-        azure_endpoint = _get_env("AZURE_ENDPOINT", "AZURE_OPENAI_ENDPOINT")
-        api_version = os.getenv("API_VERSION")
+def get_chat_completion(prompt: str, retries: int | None = None) -> dict:
+    retries = retries if retries is not None else _get_retries_from_env(default=3)
 
-        if not api_key or not azure_endpoint or not api_version:
-            raise RuntimeError(
-                "Credenciais Azure OpenAI ausentes. Verifique o .env com "
-                "API_KEY/AZURE_OPENAI_API_KEY, AZURE_ENDPOINT/AZURE_OPENAI_ENDPOINT e API_VERSION."
+    api_key = _get_env("API_KEY", "AZURE_OPENAI_API_KEY")
+    azure_endpoint = _get_env("AZURE_ENDPOINT", "AZURE_OPENAI_ENDPOINT")
+    api_version = os.getenv("API_VERSION")
+
+    if not api_key or not azure_endpoint or not api_version:
+        raise RuntimeError(
+            "Credenciais Azure OpenAI ausentes. Verifique o .env com "
+            "API_KEY/AZURE_OPENAI_API_KEY, AZURE_ENDPOINT/AZURE_OPENAI_ENDPOINT e API_VERSION."
+        )
+
+    client = AzureOpenAI(
+        azure_endpoint=azure_endpoint,
+        api_key=api_key,
+        api_version=api_version,
+    )
+
+    for attempt in range(retries):
+        try:
+            response = client.chat.completions.create(
+                model=os.getenv("DEPLOYMENT_NAME"),  # model = "deployment_name"
+                messages=[
+                    {
+                        "role": "system",
+                        "content": explanation_prompt,
+                    },
+                    {
+                        "role": "user",
+                        "content": f"{example_prompt}\n\n---\n\nAgora processe o seguinte:\n{prompt}",
+                    },
+                ],
+                temperature=0.3,
+                response_format={
+                    "type": "json_schema",
+                    "json_schema": PROCESS_JSON_SCHEMA,
+                },
             )
 
-        client = AzureOpenAI(
-            azure_endpoint=azure_endpoint,
-            api_key=api_key,
-            api_version=api_version,
-        )
+            content = response.choices[0].message.content or ""
+            clean = re.sub(r"```json|```", "", content).strip()
+            return json.loads(clean)
+        except RateLimitError:
+            if attempt < retries - 1:
+                wait_seconds = 2**attempt
+                print(
+                    f"Rate limit atingido. Nova tentativa {attempt + 2}/{retries} em {wait_seconds}s..."
+                )
+                time.sleep(wait_seconds)
+            else:
+                print("Erro ao buscar resposta de IA: limite de taxa excedido.")
+                raise
+        except Exception as e:
+            print(f"Erro na tentativa {attempt + 1}: {e}")
+            raise
 
-        response = client.chat.completions.create(
-            model=os.getenv("DEPLOYMENT_NAME"),  # model = "deployment_name"
-            messages=[
-                {
-                    "role": "system",
-                    "content": explanation_prompt,
-                },
-                {
-                    "role": "user",
-                    "content": f"{example_prompt}\n\n---\n\nAgora processe o seguinte:\n{prompt}",
-                },
-            ],
-            temperature=0.3,
-            response_format={
-                "type": "json_schema",
-                "json_schema": PROCESS_JSON_SCHEMA,
-            },
-        )
-
-        content = response.choices[0].message.content or ""
-        clean = re.sub(r"```json|```", "", content).strip()
-        return json.loads(clean)
-    except Exception as e:
-        print("Erro ao buscar resposta de IA: ", e)
-        raise
+    raise RuntimeError("Falha ao obter resposta da IA apos as tentativas configuradas.")
