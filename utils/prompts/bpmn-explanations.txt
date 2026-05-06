@@ -77,6 +77,12 @@ Raias (lane) precisam ser informadas de acordo com o ator ou responsável da fun
 
 Os gateways vão determinar o fluxo do processo baseado em condições ou em tasks paralelas.
 
+NUNCA gere uma sequência linear quando o texto original contiver qualquer
+indicação de decisão, ramificação, paralelismo ou condição. Nestes casos,
+o uso de um gateway é obrigatório, não opcional.
+Se o processo tiver N > 1 caminhos possíveis saindo de um ponto → use gateway.
+Se o processo tiver atividades que ocorrem ao mesmo tempo → use gateway.
+
 ### Gateway Exclusivo
 
 Cada ramo deve incluir uma condição e uma matriz de elementos que serão executados se a condição for atendida.
@@ -166,6 +172,31 @@ Um elemento convergente é gerado automaticamente para sincronizar os ramos para
     ],
 }
 ```
+## Antes de gerar o JSON, execute obrigatoriamente esta análise:
 
+Leia o texto de entrada e identifique explicitamente:
 
+1. **Decisões / condições** → mapeiam para `exclusiveGateway`
+   Palavras-gatilho: "se", "caso", "quando", "dependendo de", "ou", "senão",
+   "verificar se", "aprovado/reprovado", "válido/inválido", "sim/não"
 
+2. **Atividades paralelas fixas** → mapeiam para `parallelGateway`
+   Palavras-gatilho: "simultaneamente", "ao mesmo tempo", "em paralelo",
+   "enquanto isso", "concomitantemente", "e também"
+
+3. **Atividades condicionalmente paralelas** → mapeiam para `inclusiveGateway`
+   Palavras-gatilho: "um ou mais", "conforme necessário", "se aplicável",
+   "dependendo do pedido", "pode incluir"
+
+Liste os gateways encontrados antes de gerar o JSON. Se não encontrar nenhum,
+justifique explicitamente por que o processo é estritamente sequencial.
+
+## Após gerar o JSON, valide:
+
+- [ ] Existe alguma palavra de decisão no texto original que não foi mapeada
+      para um exclusiveGateway?
+- [ ] Existe algum paralelismo descrito que não virou parallelGateway?
+- [ ] Algum `exclusiveGateway` com `has_join: true` está sem convergência?
+- [ ] Todos os branches de gateways exclusivos somam todos os cenários possíveis?
+
+Se qualquer item falhar, corrija o JSON antes de retornar.
