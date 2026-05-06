@@ -184,6 +184,7 @@ class BpmnXmlGenerator:
 
 def generate_bpmn_from_input(
     input_path: str,
+    json_input: str,
     output_path: str,
     layout_js_path: str = DEFAULT_LAYOUT_JS_PATH,
 ) -> str:
@@ -199,8 +200,12 @@ def generate_bpmn_from_input(
     """
     from pipeline import BpmnPipeline
 
-    raw_input = load_type_document(input_path)
-    layouted_xml = BpmnPipeline(layout_js_path=layout_js_path).run(raw_input)
+    if input_path:
+        raw_input = load_type_document(input_path)
+        layouted_xml = BpmnPipeline(layout_js_path=layout_js_path).run(raw_input)
+
+    else:
+        layouted_xml = BpmnPipeline(layout_js_path=layout_js_path).run(json_input=json_input)
 
     output_file = Path(output_path)
     output_file.parent.mkdir(parents=True, exist_ok=True)
@@ -212,6 +217,4 @@ def generate_bpmn_from_input(
 
 if __name__ == "__main__":
     # Exemplo de uso por linha de comando
-    generate_bpmn_from_input(
-        INPUT_PATH, DEFAULT_FINAL_BPMN_PATH, DEFAULT_LAYOUT_JS_PATH
-    )
+    generate_bpmn_from_input(INPUT_PATH, FINAL_BPMN_PATH, LAYOUT_JS_PATH)
