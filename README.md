@@ -63,6 +63,37 @@ pip install -r requirements.txt
 Renomeie o arquivo `.env.example` para `.env`.
 Certifique-se de que o arquivo `.env` está configurado corretamente com as variáveis de ambiente necessárias, como `API_KEY` e `AZURE_ENDPOINT`.
 
+## Banco de dados (SQL Server 16 via Docker)
+
+Este repositório inclui um `docker-compose.yml` que sobe um container com **SQL Server 2022 (v16)**.
+
+### Requisitos
+
+- Docker + Docker Compose
+
+### Subir o SQL Server
+
+1. Renomeie `.env.example` para `.env` (se ainda não fez).
+2. Ajuste a variável `MSSQL_SA_PASSWORD` no `.env`.
+3. Suba o serviço:
+
+```bash
+docker compose up -d
+```
+
+### Conexão
+
+- Host: `localhost`
+- Porta: `1433`
+- Usuário: `sa`
+- Senha: valor de `MSSQL_SA_PASSWORD`
+
+### Parar e remover
+
+```bash
+docker compose down
+```
+
 ## Executando o Projeto
 
 Para executar o projeto, utilize o script principal `bpmn_parser.py`:
