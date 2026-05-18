@@ -36,12 +36,26 @@ class BpmnGuiApp:
     def _build_ui(self) -> None:
         container = tk.Frame(self.root, padx=30, pady=20)
         container.pack(fill="both", expand=True)
+
+        header = tk.Frame(container)
+        header.pack(fill="x", pady=(0, 14))
  
         tk.Label(
-            container,
+            header,
             text="Conversor de Documento para BPMN",
             font=("Segoe UI", 14, "bold"),
-        ).pack(anchor="w", pady=(0, 14))
+        ).pack(side="left")
+
+        tk.Button(
+            header,
+            text="Ajuda",
+            command=self._abrir_ajuda,
+            bg="#3e78ff",
+            fg="white",
+            font=("Segoe UI", 10),
+            padx=8,
+            relief="flat",
+        ).pack(side="right")
  
         mode_frame = tk.Frame(container)
         mode_frame.pack(anchor="w", pady=(0, 10))
@@ -279,6 +293,46 @@ class BpmnGuiApp:
         self.status_var.set("Falha ao gerar BPMN.")
         self.status_label.config(fg="#b91c1c")
         messagebox.showerror("Erro", f"Não foi possível gerar o BPMN:\n{error_message}")
+    
+    def _abrir_ajuda(self) -> None:
+        janela = tk.Toplevel(self.root)
+        janela.title("Ajuda")
+        janela.geometry("760x520")
+        janela.resizable(False, False)
+
+        texto = tk.Text(janela, wrap="word", padx=10, pady=10)
+        texto.tag_config("negrito", font=("Segoe UI", 10, "bold"))
+        texto.tag_config("titulo", font=("Segoe UI", 10, "bold"), justify=("center"))
+        texto.tag_config("italico", font=("Segoe UI", 10, "italic"))
+
+        texto.insert("end", "--------------------------------------------------------------------------------\n", "titulo")
+        texto.insert("end", "Fluxo: ARQUIVO\n", "titulo")
+        texto.insert("end", "--------------------------------------------------------------------------------\n\n", "titulo")
+        texto.insert("end", "1. Clique em 'Selecionar Arquivo' para escolher um arquivo do seu computador.\n")
+        texto.insert("end", "2. Clique em 'Escolher Local' para definir onde o arquivo .bpmn será salvo.\n")
+        texto.insert("end", "3. Clique em 'Gerar BPMN'.\n\n")
+        texto.insert("end", "ALERTA - Tipos aceitos: ", "negrito")
+        texto.insert("end", ".docx, .json, .md, .txt, .xlsx\n\n\n")
+
+        texto.insert("end", "--------------------------------------------------------------------------------\n", "titulo")
+        texto.insert("end", "Fluxo: TEXTO (JSON)\n", "titulo")
+        texto.insert("end", "--------------------------------------------------------------------------------\n\n", "titulo")
+        texto.insert("end", "1. Acesse o AuroraChat no seu navegador.\n")
+        texto.insert("end", "2. Abra o arquivo ")
+        texto.insert("end", "'full-bpmn-json-prompt.txt'", "italico")
+        texto.insert("end", " e copie o prompt.\n")
+        texto.insert("end", "3. Cole o prompt no AuroraChat juntamente com a tabela de entrada desejada (em texto) e envie.\n")
+        texto.insert("end", "4. Copie a resposta JSON retornada.\n")
+        texto.insert("end", "5. Cole na caixa 'Resposta JSON' do aplicativo.\n")
+        texto.insert("end", "6. Clique em 'Escolher Local' para definir onde o arquivo .bpmn será salvo.\n")
+        texto.insert("end", "7. Clique em 'Gerar BPMN'.\n\n")
+        texto.insert("end", "ALERTA - A resposta deve ser um JSON válido ", "negrito")
+        texto.insert("end", "no formato esperado (com 'process', 'type', 'id', 'label', 'lane', 'branches', etc.).")
+
+        texto.config(state="disabled")  # Somente leitura
+        texto.pack(fill="both", expand=True)
+
+        tk.Button(janela, text="Fechar", command=janela.destroy).pack(pady=10)
  
  
 def main() -> None:
