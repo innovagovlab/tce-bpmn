@@ -5,7 +5,7 @@ Esse projeto utiliza Python e JavaScript para realizar diagramas BPMN, com o aux
 ## Estrutura do Projeto
 
 ```bash
-│   bpmn_parser.py                     # Transforma o BPMN-JSON em arquivo `.bpmn`. 
+│   bpmn_parser.py                     # Transforma o BPMN-JSON em arquivo `.bpmn`.
 │   bpmn_transformer.py                # Transforma a resposta da IA em BPMN-JSON.
 │   gpt_chat_completion.py             # Script Python para a conexão com a API da OpenAzureAI
 │   requirements.txt                   # Lista de dependências do projeto.
@@ -70,6 +70,7 @@ Este repositório inclui um `docker-compose.yml` que sobe um container com **SQL
 ### Requisitos
 
 - Docker + Docker Compose
+- ODBC Driver 18 for SQL Server (para conexao via `pyodbc`)
 
 ### Subir o SQL Server
 
@@ -87,6 +88,24 @@ docker compose up -d
 - Porta: `1433`
 - Usuário: `sa`
 - Senha: valor de `MSSQL_SA_PASSWORD`
+
+## Cadastro e Login (GUI)
+
+O aplicativo agora abre uma tela de login antes do gerador BPMN. O cadastro envia uma OTP (6 digitos) por email. A OTP expira conforme configuracao no `.env` e deve ser usada para definir a primeira senha. O login só e liberado apos a troca de senha.
+
+### Configuracao no .env
+
+- `DB_*`: dados de conexao do SQL Server (o banco `DB_NAME` é criado automaticamente se nao existir).
+- `OTP_EXPIRATION_MINUTES`: expiracao da OTP.
+- `TEMP_PASSWORD_LENGTH`: tamanho da senha temporaria (gerada e armazenada, nao enviada).
+- `SMTP_*`: servidor de email para envio da OTP.
+
+Fluxo resumido:
+
+1. Clique em **Cadastrar** e informe o email.
+2. Verifique o email para obter a OTP.
+3. Use **Alterar senha** para definir uma nova senha com a OTP.
+4. Entre com email e senha atual (login liberado após a troca).
 
 ### Parar e remover
 
@@ -106,8 +125,8 @@ O script `bpmn_parser.py` é o ponto de entrada para o fluxo de trabalho de expe
 
 1.  Utiliza o módulo `gpt_chat_completion.py` em conjunto com os prompts da pasta `utils/prompts/` para ensinar a IA como passar a tabela de narrativas de processos trabalhada em BPMN-JSON.
 2.  Utiliza o módulo `bpmn_transformer.py` para transformar o BPMN-JSON em elementos (elements) e fluxos (flows), para melhor configuração do arquivo final.
-2.  Se conecta com o módulo de auto-layout em `auto-layout-process/layout.js` para organizar e renderizar o diagrama BPMN no espaço.
-3.  Armazena o resultado em `output/arquivo.bpmn`
+3.  Se conecta com o módulo de auto-layout em `auto-layout-process/layout.js` para organizar e renderizar o diagrama BPMN no espaço.
+4.  Armazena o resultado em `output/arquivo.bpmn`
 
 A pasta `utils/` fornece funções auxiliares utilizadas pelos demais scripts.
 
