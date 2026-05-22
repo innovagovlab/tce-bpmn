@@ -6,7 +6,7 @@ import smtplib
 import ssl
 import string
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 from pathlib import Path
 
@@ -73,6 +73,11 @@ def _get_env_bool(name: str, default: bool) -> bool:
 
 def _normalize_email(email: str) -> str:
     return email.strip().lower()
+
+
+def _is_allowed_email_domain(email: str) -> bool:
+    domain = email.rsplit("@", 1)[-1]
+    return domain == "tcepe.tc.br"
 
 
 def _validate_identifier(name: str) -> str:
@@ -252,6 +257,8 @@ class AuthService:
         email = _normalize_email(email)
         if not email:
             raise AuthError("Email é obrigatório")
+        if not _is_allowed_email_domain(email):
+            raise AuthError("Apenas email institucional @tcepe.tc.br é permitido")
 
         temp_length = _get_env_int("TEMP_PASSWORD_LENGTH", 16)
         otp_minutes = _get_env_int("OTP_EXPIRATION_MINUTES", 15)
@@ -259,7 +266,7 @@ class AuthService:
         password_hash = _hash_password(temp_password)
         otp = _generate_otp()
         otp_hash = _hash_otp(otp)
-        expires_at = datetime.utcnow() + timedelta(minutes=otp_minutes)
+        expires_at = datetime.now(timezone.utc) + timedelta(minutes=otp_minutes)
 
         with _connect_db() as conn:
             cursor = conn.cursor()
@@ -310,7 +317,7 @@ class AuthService:
         otp_minutes = _get_env_int("OTP_EXPIRATION_MINUTES", 15)
         otp = _generate_otp()
         otp_hash = _hash_otp(otp)
-        expires_at = datetime.utcnow() + timedelta(minutes=otp_minutes)
+        expires_at = datetime.now(timezone.utc) + timedelta(minutes=otp_minutes)
 
         with _connect_db() as conn:
             cursor = conn.cursor()
