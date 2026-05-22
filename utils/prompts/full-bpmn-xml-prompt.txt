@@ -48,7 +48,6 @@ Antes de gerar qualquer elemento JSON, analise a tabela inteira e responda obrig
 
 17. Após a execução de um gateway (exclusive ou inclusive), o fluxo continua automaticamente para o próximo elemento do array, exceto quando "next" for definido.
 
-
 # Formulação BPMN para a transformação do processo
 
 ## Events
@@ -83,16 +82,6 @@ Utilize apenas um evento de início por processo.
 
 NUNCA trate cada item como um startEvent automaticamente.
 
-```json
-{
-    "type": String = "startEvent" | "endEvent",
-    "id": String,
-    "label": String, // OPCIONAL: definição curta de um evento
-	"lane": String,
-    "eventDefinition": String = "timerEventDefinition" | "messageEventDefinition", // OPCIONAL: Tipo de acionador de evento
-}
-```
-
 ## Tasks
 
 Para especificar o tipo de tasks, utilize a parte de "type" para determinar o tipo. Os tipos de tasks suportadas são: "task", "userTask", "serviceTask" e "sendTask", "receiveTask".
@@ -104,15 +93,6 @@ Sempre tente especificar o tipo de task mais específico:
 - Use 'task' apens se a ação não pode ser declarada fielmente
 Nomes (label) precisam ser claros e simples (cerca de 2 a 5 palavras), nunca devem ser iguais a outros ID's já existentes.
 Raias (lane) precisam ser informadas de acordo com o ator ou responsável da função, ou seja quem irá fazer ou acionar determinada função.
-
-```json
-{
-    "type": String = "task" | "userTask" | "serviceTask" | "sendTask" | "receiveTask",
-    "id": String,
-    "label": String, // Descrição básica da atividade
-	"lane": String,
-}
-```
 
 ## Gateways
 
@@ -136,28 +116,6 @@ Exemplos:
 - convergência manual
 NUNCA use "next" para o próximo elemento imediato do array.
 
-```json
-{
-    "type": String = "exclusiveGateway",
-    "id": String,
-    "label": String, // Descrição do gateway (e.g. "Solicitação Completa?")
-	"lane": String,
-    "has_join": Boolean, // se o gateway contém um elemento de junção que junta os ramos.
-    "branches": [
-        {
-            "condition": String, // condição para o ramo
-            "path": [], // array de elementos que são executados se a condição for atendida (pode estar vazia)
-            "next": String, // OPCIONAL: ID do próximo elemento, caso a sequência padrão não seja seguida. Omita ou defina como nulo se a sequência padrão for seguida.
-        },
-        {
-            "condition": String,
-            "path": [],
-            "next": String, // OPCIONAL: como explicado acima.
-        },
-        // ... outros ramos
-    ],
-}
-```
 
 ### Gateway Inclusivo
 
@@ -180,48 +138,80 @@ Exemplos:
 - convergência manual
 NUNCA use "next" para o próximo elemento imediato do array.
 
-```json
-{
-    "type": String = "inclusiveGateway",
-    "id": String,
-    "label": String, // Descrição do gateway (e.g. "Qual solicitação analisar?")
-	"lane": String,
-    "has_join": Boolean, // se o gateway contém um elemento de junção que junta os ramos.
-    "branches": [
-        {
-            "condition": String, // OBRIGATÓRIO para opções não padrão (ex.: "O pedido inclui massa")
-            "path": [], // array de elementos caso a condição seja cumprida
-            "next": String, // OPCIONAL: ID do próximo elemento, caso a sequência padrão não seja seguida. Omita ou defina como nulo se a sequência padrão for seguida.
-            "is_default": Boolean, // OPCIONAL: marca essa como ramo principal/padrão (default: false)
-        },
-        {
-            // Exemplo de ramo padrão - SEM campo de condição
-            "path": [], // array de elementos caso a condição seja cumprida
-            "next": String, // OPCIONAL: como explicado acima.
-            "is_default": true, // marca essa como ramo principal/padrão
-        },
-        // ... outros ramos
-    ],
-}
-```
-
 ### Gateway Paralelo
 
 Especifique "ramos" como uma array de arrays, onde cada submatriz lista elementos executados em paralelo.
 Um elemento convergente é gerado automaticamente para sincronizar os ramos paralelos. Portanto, não é necessário especificá-lo explicitamente.
 
-```json
+# Missão
+Gere um XML a partir da entrada que atenda somente à parte lógica, ou seja, sem o Diagrama BPMN, somente a Definição do Diagrama (definitions),com o processo (process) e as colaborações (Collaboration), se houver alguma
+
+# Entrada
 {
-    "type": String = "parallelGateway",
-    "id": String,
-	"lane": String,
-    "branches": [
-        [], // array de elementos que são executados em paralelo com o próximo array
-        [], // array de elementos que são executados em paralelo com o array anterior
-        // ... outros arrays
-    ],
+  "processo": [
+    {
+      "Entradas": "Prazo de 180 dias; Mudança percebida; Solicitação de setor.",
+      "Atividade": "Iniciar Manutenção da Carta de Serviços",
+      "Ator/Área responsável": "Analista da Ouvidoria / Setor Responsável do TCE-PE",
+      "Recursos de TI": "Portal do TCE-PE / Sistemas do Serviço",
+      "Produtos": "Necessidade de atualização identificada",
+      "Observações": "A atividade pode ser iniciada de 3 formas: 1) Verificação periódica da Ouvidoria; 2) Identificação espontânea da Ouvidoria; 3) Solicitação direta de um setor."
+    },
+    {
+      "Entradas": "Necessidade de atualização identificada",
+      "Atividade": "Comunicar Mudança Identificada ao Setor Responsável",
+      "Ator/Área responsável": "Analista da Ouvidoria",
+      "Recursos de TI": "Sistema SEI",
+      "Produtos": "Processo SEI com comunicado enviado ao setor",
+      "Observações": "Esta atividade ocorre apenas quando o processo é iniciado pela Ouvidoria (casos 1 e 2)."
+    },
+    {
+      "Entradas": "Processo SEI com comunicado da Ouvidoria OU Mudança identificada pelo próprio setor",
+      "Atividade": "Solicitar Formalmente a Alteração na Carta de Serviços",
+      "Ator/Área responsável": "Setor Responsável pelo Serviço",
+      "Recursos de TI": "Sistema SEI",
+      "Produtos": "Novo Processo SEI com solicitação de alteração enviado à Ouvidoria",
+      "Observações": "Esta etapa é o ponto de convergência dos três inícios possíveis do processo."
+    },
+    {
+      "Entradas": "Novo Processo SEI com solicitação de alteração",
+      "Atividade": "Analisar Solicitação de Alteração",
+      "Ator/Área responsável": "Analista da Ouvidoria",
+      "Recursos de TI": "Sistema SEI",
+      "Produtos": "Solicitação analisada (completa ou incompleta)",
+      "Observações": "Ponto de decisão: se a solicitação estiver completa, o processo segue; se estiver incompleta, aciona a próxima atividade."
+    },
+    {
+      "Entradas": "Solicitação analisada (incompleta)",
+      "Atividade": "Solicitar Informações Complementares",
+      "Ator/Área responsável": "Analista da Ouvidoria",
+      "Recursos de TI": "Sistema SEI",
+      "Produtos": "Despacho no SEI solicitando complementação",
+      "Observações": "O processo é devolvido ao setor responsável e aguarda reenvio com informações corrigidas, retornando para 'Analisar Solicitação'."
+    },
+    {
+      "Entradas": "Solicitação analisada (completa)",
+      "Atividade": "Realizar Alteração na Carta de Serviços",
+      "Ator/Área responsável": "Analista da Ouvidoria",
+      "Recursos de TI": "Portal da Ouvidoria do TCE-PE",
+      "Produtos": "Texto da Carta de Serviços editado (não publicado)",
+      "Observações": "A alteração é feita no ambiente de edição do portal, preparando para publicação."
+    },
+    {
+      "Entradas": "Texto da Carta de Serviços editado",
+      "Atividade": "Publicar Alteração da Carta de Serviços",
+      "Ator/Área responsável": "Analista da Ouvidoria",
+      "Recursos de TI": "Portal da Ouvidoria do TCE-PE",
+      "Produtos": "Carta de Serviços atualizada e pública",
+      "Observações": "Esta ação torna a mudança visível para o cidadão."
+    },
+    {
+      "Entradas": "Texto da Carta de Serviços editado",
+      "Atividade": "Comunicar Conclusão ao Setor Solicitante",
+      "Ator/Área responsável": "Analista da Ouvidoria",
+      "Recursos de TI": "Sistema SEI",
+      "Produtos": "Despacho de encerramento enviado no processo SEI",
+      "Observações": "Ocorre em paralelo à publicação e encerra a comunicação com o setor."
+    }
+  ]
 }
-```
-
-
-

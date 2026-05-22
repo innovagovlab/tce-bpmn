@@ -1,3 +1,230 @@
+A representação JSON do BPMN utiliza uma sequência de elementos produzida para descrever o processo. A sequência padrão do processo segue a ordem dos elementos no array "process". Caso não haja "next", o fluxo segue para o próximo elemento da lista. Gateways podem alterar essa sequência. A estrutura do JSON deve ser pensada como um grafo linear com desvios controlados por gateways. Evite estruturas que não possam ser linearizadas com o uso de "next".
+
+## Regras Globais
+
+- O fluxo segue a ordem do array, salvo quando alterado por gateways ou "next".
+- IDs devem ser únicos.
+- Não duplicar elementos.
+- "next" deve referenciar IDs existentes.
+- Todo caminho deve eventualmente levar a um endEvent.
+- Não criar elementos desconectados.
+- Todo elemento deve estar alcançável a partir do startEvent.
+
+## Antes de converter: análise obrigatória
+
+Antes de gerar qualquer elemento JSON, analise a tabela inteira e responda obrigatoriamente:
+
+1. O processo possui mais de um gatilho de início? (Ex: pode possuir várias entradas alternativas) -> Observe a regra de múltiplos gatilhos iniciais antes de gerar os eventos.
+
+2. "startEvent" nunca se conecta a outro startEvent. Cada startEvent é independente e conecta apenas ao primeiro elemento não-startEvent que o sucede no array. Nunca gere uma sequência de fluxo entre dois startEvent.
+
+3. Existe alguma atividade que só ocorre sob uma condição? → use exclusiveGateway para decisões condicionais ou inclusiveGateway para execuções simultâneas.
+
+4. Gateways devem ser inferidos mesmo quando não mencionados explicitamente na tabela. Analise entradas, saídas e observações de cada linha em busca desses padrões.
+
+5. Existe alguma atividade que ocorre ao mesmo tempo ou simultaneamente que outra? → utilize parallelGateway para definir "paths" diferentes.
+
+6. Atividades(Tasks) de fluxos diferentes em um gateway paralelo não podem estar em uma mesma lane em um fluxo de gateway paralelos, ou seja, fluxos paralelas **DEVEM* estar em atores diferentes.
+
+7. Após a execução de todos os ramos paralelos, o fluxo continua automaticamente para o próximo elemento após o gateway.
+
+8. Se um branch possuir "path" vazio, ele segue diretamente para o próximo elemento após o gateway ou para o "next", se definido.
+
+9. Sempre que um fluxo divergir, assegure que haja uma convergência adequada, quando necessário.
+
+10. Garanta que todos os caminhos do processo estejam corretamente conectados, sem fluxos soltos.
+
+11. O fluxo pode retornar a uma etapa anterior? → use exclusiveGateway com next apontando para o id do elemento de destino.
+
+12. Evite duplicação de elementos; cada atividade deve possuir um ID único.
+
+13. Alguma atividade é mencionada mais de uma vez no fluxo? -> NUNCA duplique o elemento. Use next com o id já existente para referenciar o elemento.
+
+14. Todos os elementos devem possuir IDs únicos em todo o processo. Referências via "next" devem apontar para IDs já existentes e nunca criar novos elementos.
+
+15. Certifique-se de que o processo tenha um evento de fim claro.
+
+16. Finais não podem estar contidos em um fluxo de gateway paralelos, ou seja, não podem ser declarados dentro de um path desse tipo de elemento.
+
+17. Após a execução de um gateway (exclusive ou inclusive), o fluxo continua automaticamente para o próximo elemento do array, exceto quando "next" for definido.
+
+
+# Formulação BPMN para a transformação do processo
+
+## Events
+
+Para especificar o tipo de evento, utilize a parte de "type" para determinar o tipo. Os tipos de eventos suportados são: "startEvent" e "endEvent".
+
+Eventos podem, opcionalmente, possuir uma definição na qual especifica o que pode acioná-lo ou é acionado pelo evento:
+- Use 'timerEventDefinition' para eventos baseados em tempo (horários, delays, tempos limite).
+- Use 'messageEventDefinition' para eventos baseados em mensagens, seja ela envio ou recebimento.
+- Caso não há algum tipo específico, omita esse campo.
+
+Tipos de Eventos:
+- 'startEvent': Inicia o processo (pode possuir timerEventDefinition ou messageEventDefinition)
+- 'endEvent': Finaliza o processo (pode possuir messageEventDefinition)
+
+Utilize apenas um evento de início por padrão, a menos que existam gatilhos realmente independentes.
+Quando houver diferentes formas de iniciar o processo que convergem para o mesmo fluxo, utilize um único evento de início seguido de um gateway exclusivo para representar as variações.
+
+Utilize múltiplos eventos de início apenas quando cada um representar um gatilho independente, como:
+- Recebimento via API
+- Recebimento via formulário
+
+Evite múltiplos eventos de início quando:
+- Os gatilhos são apenas variações de um mesmo tipo -> use gateway após um único início
+- É necessário aguardar múltiplos eventos simultaneamente -> use evento paralelo ou baseado em evento
+
+Nomes (label) precisam ser claros e simples (cerca de 2 a 5 palavras), nunca devem ser iguais a outros ID's já existentes.
+Raias (lane) precisam ser informadas de acordo com o ator ou responsável da função, ou seja quem irá fazer ou acionar determinada função.
+
+Utilize apenas um evento de início por processo.
+- Exceção: utilize múltiplos startEvents apenas quando houver gatilhos realmente independentes.
+
+NUNCA trate cada item como um startEvent automaticamente.
+
+```json
+{
+    "type": String = "startEvent" | "endEvent",
+    "id": String,
+    "label": String, // OPCIONAL: definição curta de um evento
+	"lane": String,
+    "eventDefinition": String = "timerEventDefinition" | "messageEventDefinition", // OPCIONAL: Tipo de acionador de evento
+}
+```
+
+## Tasks
+
+Para especificar o tipo de tasks, utilize a parte de "type" para determinar o tipo. Os tipos de tasks suportadas são: "task", "userTask", "serviceTask" e "sendTask", "receiveTask".
+Sempre tente especificar o tipo de task mais específico: 
+- Use 'userTask' para tasks que possuem interação de pessoas (revisar, decidir, inserir dados)
+- Use 'serviceTask' para operações automatizadas do sistema (Chamadas API, cálculos, operações automatizadas)
+- Use 'sendTask' para operações de envios automáticos do sistema (emails, notificações, mensagens)
+- Use 'receiveTask' para operações de recebimento automáticos do sistema (espera de mensagens, webhooks)
+- Use 'task' apens se a ação não pode ser declarada fielmente
+Nomes (label) precisam ser claros e simples (cerca de 2 a 5 palavras), nunca devem ser iguais a outros ID's já existentes.
+Raias (lane) precisam ser informadas de acordo com o ator ou responsável da função, ou seja quem irá fazer ou acionar determinada função.
+
+```json
+{
+    "type": String = "task" | "userTask" | "serviceTask" | "sendTask" | "receiveTask",
+    "id": String,
+    "label": String, // Descrição básica da atividade
+	"lane": String,
+}
+```
+
+## Gateways
+
+Os gateways vão determinar o fluxo do processo baseado em condições ou em tasks paralelas.
+
+### Gateway Exclusivo
+
+Cada ramo deve incluir uma condição e uma matriz de elementos que serão executados se a condição for atendida.
+Se um ramo tiver um "path" vazio, ele leva ao primeiro elemento após o gateway exclusivo.
+Se um ramo não leva para o próximo elemento  no processo (exemplo, volta para o elemento anterior), especifique o id do próximo elemento.
+Se um ramo leva para o próximo elemento no processo, não especifique o id do próximo elemento.
+Todo fluxo deve terminar em um endEvent. Branches podem não conter endEvent explícito apenas se retornarem ao fluxo principal que leva a um endEvent.
+
+Se a descrição do processo não menciona explicitamente o 'outro' ramo ou especificar o resultado para uma condição não atendida, assuma que ele leva a um evento final.
+Raias (lane) precisam ser informadas de acordo com o ator ou responsável da função, ou seja quem irá fazer ou acionar determinada função.
+
+Use "next" apenas quando o fluxo NÃO seguir a ordem sequencial natural.
+Exemplos:
+- retorno a etapa anterior
+- pular para outro ponto do processo
+- convergência manual
+NUNCA use "next" para o próximo elemento imediato do array.
+
+```json
+{
+    "type": String = "exclusiveGateway",
+    "id": String,
+    "label": String, // Descrição do gateway (e.g. "Solicitação Completa?")
+	"lane": String,
+    "has_join": Boolean, // se o gateway contém um elemento de junção que junta os ramos.
+    "branches": [
+        {
+            "condition": String, // condição para o ramo
+            "path": [], // array de elementos que são executados se a condição for atendida (pode estar vazia)
+            "next": String, // OPCIONAL: ID do próximo elemento, caso a sequência padrão não seja seguida. Omita ou defina como nulo se a sequência padrão for seguida.
+        },
+        {
+            "condition": String,
+            "path": [],
+            "next": String, // OPCIONAL: como explicado acima.
+        },
+        // ... outros ramos
+    ],
+}
+```
+
+### Gateway Inclusivo
+
+Um gateway inclusivo (gateway OR) permite que vários caminhos sejam percorridos simultaneamente com base em suas condições. Ao contrário dos gateways exclusivos, onde apenas um caminho é escolhido, os gateways inclusivos avaliam todas as condições e percorrem TODOS os caminhos onde a condição é satisfeita.
+
+Utilize gateways inclusivos somente quando:
+- Várias atividades paralelas poderem ser necessárias dependendo das condições (por exemplo, preparar massa E salada E bife de acordo com o pedido).
+- O número de caminhos paralelos é determinado pelos dados/variáveis, em vez de ser fixo.
+- Você precisa de "um ou mais" comportamentos em vez de "exatamente um" (exclusivo) ou "todos" (paralelo).
+
+Cada ramo deve incluir um array de elementos. Todos os ramos que atenderem às condições serão executados em paralelo.
+Ramos não padrões PRECISAM ter alguma condição. Ramos padrões podem NÃO POSSUIR uma condição.
+Opcionalmente, um ramo pode ser marcado como padrão (is_default: true). Este ramo é utilizado somente quando NENHUMA outra condição for atendida.
+Raias (lane) precisam ser informadas de acordo com o ator ou responsável da função, ou seja quem irá fazer ou acionar determinada função.
+
+Use "next" apenas quando o fluxo NÃO seguir a ordem sequencial natural.
+Exemplos:
+- retorno a etapa anterior
+- pular para outro ponto do processo
+- convergência manual
+NUNCA use "next" para o próximo elemento imediato do array.
+
+```json
+{
+    "type": String = "inclusiveGateway",
+    "id": String,
+    "label": String, // Descrição do gateway (e.g. "Qual solicitação analisar?")
+	"lane": String,
+    "has_join": Boolean, // se o gateway contém um elemento de junção que junta os ramos.
+    "branches": [
+        {
+            "condition": String, // OBRIGATÓRIO para opções não padrão (ex.: "O pedido inclui massa")
+            "path": [], // array de elementos caso a condição seja cumprida
+            "next": String, // OPCIONAL: ID do próximo elemento, caso a sequência padrão não seja seguida. Omita ou defina como nulo se a sequência padrão for seguida.
+            "is_default": Boolean, // OPCIONAL: marca essa como ramo principal/padrão (default: false)
+        },
+        {
+            // Exemplo de ramo padrão - SEM campo de condição
+            "path": [], // array de elementos caso a condição seja cumprida
+            "next": String, // OPCIONAL: como explicado acima.
+            "is_default": true, // marca essa como ramo principal/padrão
+        },
+        // ... outros ramos
+    ],
+}
+```
+
+### Gateway Paralelo
+
+Especifique "ramos" como uma array de arrays, onde cada submatriz lista elementos executados em paralelo.
+Um elemento convergente é gerado automaticamente para sincronizar os ramos paralelos. Portanto, não é necessário especificá-lo explicitamente.
+
+```json
+{
+    "type": String = "parallelGateway",
+    "id": String,
+	"lane": String,
+    "branches": [
+        [], // array de elementos que são executados em paralelo com o próximo array
+        [], // array de elementos que são executados em paralelo com o array anterior
+        // ... outros arrays
+    ],
+}
+```
+
+
+
 # Exemplos de processos
 A ordem de execução no processo BPMN é determinada pela sequência de elementos na matriz de nível superior "process". Os elementos são executados na ordem em que aparecem nessa matriz, do primeiro ao último.
 
@@ -51,7 +278,6 @@ Descrição de tabela:
 
 Resultado:
 ```json
-{
 {
     "process": [
       {
@@ -260,7 +486,7 @@ Resultado:
         "lane": "RH"
       }
     ]
-}
+  }
 ```
 
 ---
@@ -635,7 +861,7 @@ Resultado:
               {
                 "type": "userTask",
                 "id": "inc_task_registrar_2",
-                "label": "Registrar Incidente Relato",
+                "label": "Registrar Incidente por Relato",
                 "lane": "Central de Suporte"
               }
             ]
@@ -705,74 +931,6 @@ Resultado:
 ```
 
 # Missão
-Gere uma linguagem intermediária a partir da entrada que atenda somente à parte lógica.
+Gere uma linguagem intermediária em formato BPMN-JSON a partir da entrada que atenda somente à parte lógica.
 
 # Entrada
-{
-  "processo": [
-    {
-      "Entradas": "Prazo de 180 dias; Mudança percebida; Solicitação de setor.",
-      "Atividade": "Iniciar Manutenção da Carta de Serviços",
-      "Ator/Área responsável": "Analista da Ouvidoria / Setor Responsável do TCE-PE",
-      "Recursos de TI": "Portal do TCE-PE / Sistemas do Serviço",
-      "Produtos": "Necessidade de atualização identificada",
-      "Observações": "A atividade pode ser iniciada de 3 formas: 1) Verificação periódica da Ouvidoria; 2) Identificação espontânea da Ouvidoria; 3) Solicitação direta de um setor."
-    },
-    {
-      "Entradas": "Necessidade de atualização identificada",
-      "Atividade": "Comunicar Mudança Identificada ao Setor Responsável",
-      "Ator/Área responsável": "Analista da Ouvidoria",
-      "Recursos de TI": "Sistema SEI",
-      "Produtos": "Processo SEI com comunicado enviado ao setor",
-      "Observações": "Esta atividade ocorre apenas quando o processo é iniciado pela Ouvidoria (casos 1 e 2)."
-    },
-    {
-      "Entradas": "Processo SEI com comunicado da Ouvidoria OU Mudança identificada pelo próprio setor",
-      "Atividade": "Solicitar Formalmente a Alteração na Carta de Serviços",
-      "Ator/Área responsável": "Setor Responsável pelo Serviço",
-      "Recursos de TI": "Sistema SEI",
-      "Produtos": "Novo Processo SEI com solicitação de alteração enviado à Ouvidoria",
-      "Observações": "Esta etapa é o ponto de convergência dos três inícios possíveis do processo."
-    },
-    {
-      "Entradas": "Novo Processo SEI com solicitação de alteração",
-      "Atividade": "Analisar Solicitação de Alteração",
-      "Ator/Área responsável": "Analista da Ouvidoria",
-      "Recursos de TI": "Sistema SEI",
-      "Produtos": "Solicitação analisada (completa ou incompleta)",
-      "Observações": "Ponto de decisão: se a solicitação estiver completa, o processo segue; se estiver incompleta, aciona a próxima atividade."
-    },
-    {
-      "Entradas": "Solicitação analisada (incompleta)",
-      "Atividade": "Solicitar Informações Complementares",
-      "Ator/Área responsável": "Analista da Ouvidoria",
-      "Recursos de TI": "Sistema SEI",
-      "Produtos": "Despacho no SEI solicitando complementação",
-      "Observações": "O processo é devolvido ao setor responsável e aguarda reenvio com informações corrigidas, retornando para 'Analisar Solicitação'."
-    },
-    {
-      "Entradas": "Solicitação analisada (completa)",
-      "Atividade": "Realizar Alteração na Carta de Serviços",
-      "Ator/Área responsável": "Analista da Ouvidoria",
-      "Recursos de TI": "Portal da Ouvidoria do TCE-PE",
-      "Produtos": "Texto da Carta de Serviços editado (não publicado)",
-      "Observações": "A alteração é feita no ambiente de edição do portal, preparando para publicação."
-    },
-    {
-      "Entradas": "Texto da Carta de Serviços editado",
-      "Atividade": "Publicar Alteração da Carta de Serviços",
-      "Ator/Área responsável": "Analista da Ouvidoria",
-      "Recursos de TI": "Portal da Ouvidoria do TCE-PE",
-      "Produtos": "Carta de Serviços atualizada e pública",
-      "Observações": "Esta ação torna a mudança visível para o cidadão."
-    },
-    {
-      "Entradas": "Texto da Carta de Serviços editado",
-      "Atividade": "Comunicar Conclusão ao Setor Solicitante",
-      "Ator/Área responsável": "Analista da Ouvidoria",
-      "Recursos de TI": "Sistema SEI",
-      "Produtos": "Despacho de encerramento enviado no processo SEI",
-      "Observações": "Ocorre em paralelo à publicação e encerra a comunicação com o setor."
-    }
-  ]
-}

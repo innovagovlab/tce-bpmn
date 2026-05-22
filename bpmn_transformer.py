@@ -43,6 +43,11 @@ class BpmnTransformer:
         return {"elements": self.elements, "flows": self.flows}
 
     def process(self, process: list[dict], next_id: Optional[str] = None) -> None:
+        
+        first_non_start_id = next(
+        (el["id"] for el in process if el["type"] != "startEvent"), next_id
+        )
+
         for index, element in enumerate(process):
             # Identificar qual vai ser o próximo elemento para construção dos flows
             successor_id = (
@@ -54,25 +59,28 @@ class BpmnTransformer:
                 "id": element["id"],
                 "type": element["type"],
                 "label": element.get("label"),
-                "lane": element.get("lane")
+                "lane": element.get("lane"),
+                "default_flow": None
             })
 
-            gateway_type = element["type"]
+            element_type = element["type"]
 
             # Tipos específicos de elementos que devemos ter um pouco mais de cuidado
-            if gateway_type == "exclusiveGateway":
-                join_id = self.handle_split_gateway(element, successor_id, gateway_type)
-            elif gateway_type == "parallelGateway":
+            if element_type == "exclusiveGateway":
+                join_id = self.handle_split_gateway(element, successor_id, element_type)
+            elif element_type == "parallelGateway":
                 join_id = self.handle_parallel_gateway(element)
-            elif gateway_type == "inclusiveGateway":
-                join_id = self.handle_split_gateway(element, successor_id, gateway_type)
+            elif element_type == "inclusiveGateway":
+                join_id = self.handle_split_gateway(element, successor_id, element_type)
+            elif element_type == "startEvent":
+                join_id = self.add_flow(element["id"], first_non_start_id)
             else:
                 join_id = None
 
             if join_id and successor_id:
                 self.add_flow(join_id, successor_id)
-            elif successor_id and gateway_type not in (
-                "endEvent", "exclusiveGateway", "parallelGateway", "inclusiveGateway"
+            elif successor_id and element_type not in (
+                "endEvent", "exclusiveGateway", "parallelGateway", "inclusiveGateway", "startEvent"
             ):
                 self.add_flow(element["id"], successor_id)
 
@@ -80,7 +88,7 @@ class BpmnTransformer:
         self,
         element: dict,
         next_id: Optional[str],
-        gateway_type: str,
+        element_type: str,
     ) -> Optional[str]:
         '''
         Trata exclusiveGateway e inclusiveGateway (mesma lógica estrutural).
@@ -93,7 +101,7 @@ class BpmnTransformer:
 
         if element.get("has_join"):
             join_id = f"{element['id']}-join"
-            self.elements.append({"id": join_id, "type": gateway_type, "label": None, "lane": element.get("lane")})
+            self.elements.append({"id": join_id, "type": element_type, "label": None, "lane": element.get("lane")})
 
         # Visto que um gateway possuí elementos dentro dele (no caso seriam os ramos), vamos percorrer por eles para identificar todos
         for branch in element["branches"]:
@@ -109,12 +117,17 @@ class BpmnTransformer:
             Ex: quando algum ramo não possua tasks intermediárias, ele não precisa construir um "path"
             '''
             if not branch.get("path"):
-                target = branch.get("next", next_id)
-                if target:
-                    flow_id = f"{element['id']}-{target}"
-                    self.add_flow(element["id"], target, flow_id=flow_id, condition=condition)
-                    if is_default:
-                        default_flow_id = flow_id
+                target = branch.get("next") or join_id or next_id
+
+                if target is None:
+                    raise ValueError(f"Branch sem destino no gateway {element['id']}")
+
+                flow_id = f"{element['id']}-{target}"
+                self.add_flow(element["id"], target, flow_id=flow_id, condition=condition)
+
+                if is_default:
+                    default_flow_id = flow_id
+
                 continue
 
             # Caso ele tenha path, vamos passar por todos os caminhos para enumerar os elementos
@@ -159,7 +172,7 @@ class BpmnTransformer:
 
             if sub.elements:
                 self.add_flow(element["id"], sub.elements[0]["id"])
-                self.add_flow(sub.elements[-1]["id"], join_id)
+                # self.add_flow(sub.elements[-1]["id"], join_id) o add_flow tem o guard de duplicata, então não quebra, mas o fluxo correto já vem do sub.process, então da pra remover essa linha com segurança
 
         return join_id
 
@@ -173,6 +186,7 @@ class BpmnTransformer:
         # Caso já exista alguma seta com esse caminho específico, não precisa refazer o trabalho.
         if any(f["sourceRef"] == source and f["targetRef"] == target for f in self.flows):
             return
+            
         self.flows.append({
             "id": flow_id or f"{source}-{target}",
             "sourceRef": source,
