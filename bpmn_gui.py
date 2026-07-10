@@ -5,6 +5,7 @@ from pathlib import Path
 from tkinter import filedialog, messagebox
 
 from bpmn_parser import LAYOUT_JS_PATH, generate_bpmn_from_input
+from utils.activity_log import STATUS_ERROR, STATUS_SUCCESS, LogService
 from utils.auth import AuthError, AuthService
 
 INPUT_FILETYPES = [
@@ -33,9 +34,33 @@ def _default_dialog_dir() -> str:
     return str(Path.home())
 
 
+def _safe_log(
+    log_service: LogService | None,
+    user_email: str | None,
+    action: str,
+    status: str,
+    message: str | None = None,
+    details: dict | None = None,
+) -> int | None:
+    """Registra uma ação sem interromper o fluxo caso o log falhe."""
+    if not log_service:
+        return None
+    try:
+        return log_service.log_action(user_email, action, status, message, details)
+    except Exception:
+        return None
+
+
 class BpmnGuiApp:
-    def __init__(self, root: tk.Tk):
+    def __init__(
+        self,
+        root: tk.Tk,
+        user_email: str | None = None,
+        log_service: LogService | None = None,
+    ):
         self.root = root
+        self.user_email = user_email
+        self.log_service = log_service
         self.root.title("Gerador BPMN")
         self.root.geometry("820x620")
         center_window(self.root, 820, 650)
@@ -351,6 +376,11 @@ class BpmnGuiApp:
         output_path: str,
         prompt_for_save: bool,
     ) -> None:
+        details = {
+            "modo": "arquivo" if input_data else "texto",
+            "arquivo_entrada": input_data or None,
+            "caminho_saida": output_path,
+        }
         try:
             saved_path = generate_bpmn_from_input(
                 input_path=input_data,
@@ -358,8 +388,32 @@ class BpmnGuiApp:
                 output_path=output_path,
                 layout_js_path=LAYOUT_JS_PATH,
             )
+            log_id = _safe_log(
+                self.log_service,
+                self.user_email,
+                "gerar_bpmn",
+                STATUS_SUCCESS,
+                message=f"BPMN gerado em {saved_path}",
+                details=details,
+            )
+            if log_id is not None:
+                try:
+                    with open(saved_path, "rb") as bpmn_file:
+                        self.log_service.save_bpmn_output(
+                            log_id, bpmn_file.read(), Path(saved_path).name
+                        )
+                except Exception:
+                    pass
             self.root.after(0, self._on_success, saved_path, prompt_for_save)
         except Exception as exc:
+            _safe_log(
+                self.log_service,
+                self.user_email,
+                "gerar_bpmn",
+                STATUS_ERROR,
+                message=str(exc),
+                details=details,
+            )
             self.root.after(0, self._on_error, str(exc))
 
     def _on_success(self, saved_path: str, prompt_for_save: bool) -> None:
@@ -372,9 +426,11 @@ class BpmnGuiApp:
                 defaultextension=".bpmn",
                 filetypes=[("BPMN", "*.bpmn")],
                 initialfile=Path(saved_path).name,
-                initialdir=str(Path(saved_path).parent)
-                if Path(saved_path).parent.exists()
-                else _default_dialog_dir(),
+                initialdir=(
+                    str(Path(saved_path).parent)
+                    if Path(saved_path).parent.exists()
+                    else _default_dialog_dir()
+                ),
             )
             if chosen_path:
                 try:
@@ -505,6 +561,12 @@ class AuthWindow:
             self.root.destroy()
             return
 
+        self.log_service = LogService()
+        try:
+            self.log_service.ensure_ready()
+        except Exception:
+            self.log_service = None
+
         self.email_var = tk.StringVar()
         self.password_var = tk.StringVar()
 
@@ -589,18 +651,29 @@ class AuthWindow:
 
         try:
             if not self.auth.authenticate(email, password):
+                _safe_log(
+                    self.log_service,
+                    email,
+                    "login",
+                    STATUS_ERROR,
+                    "Credenciais inválidas",
+                )
                 messagebox.showerror("Login", "Email ou senha inválidos.")
                 return
         except AuthError as exc:
+            _safe_log(self.log_service, email, "login", STATUS_ERROR, str(exc))
             messagebox.showwarning("Login", str(exc))
             return
         except Exception as exc:
+            _safe_log(self.log_service, email, "login", STATUS_ERROR, str(exc))
             messagebox.showerror("Login", f"Falha ao autenticar:\n{exc}")
             return
 
+        _safe_log(self.log_service, email, "login", STATUS_SUCCESS)
+
         for widget in self.root.winfo_children():
             widget.destroy()
-        BpmnGuiApp(self.root)
+        BpmnGuiApp(self.root, user_email=email, log_service=self.log_service)
 
     def _open_register(self) -> None:
         dialog = tk.Toplevel(self.root)
@@ -624,12 +697,15 @@ class AuthWindow:
             try:
                 self.auth.register_user(email)
             except AuthError as exc:
+                _safe_log(self.log_service, email, "cadastro", STATUS_ERROR, str(exc))
                 messagebox.showerror("Cadastro", str(exc))
                 return
             except Exception as exc:
+                _safe_log(self.log_service, email, "cadastro", STATUS_ERROR, str(exc))
                 messagebox.showerror("Cadastro", f"Falha ao cadastrar:\n{exc}")
                 return
 
+            _safe_log(self.log_service, email, "cadastro", STATUS_SUCCESS)
             messagebox.showinfo(
                 "Cadastro",
                 "Usuário criado. Enviamos a OTP por email para definir a senha.",
@@ -711,12 +787,19 @@ class AuthWindow:
             try:
                 self.auth.reset_password(email, otp, new_password)
             except AuthError as exc:
+                _safe_log(
+                    self.log_service, email, "alterar_senha", STATUS_ERROR, str(exc)
+                )
                 messagebox.showerror("Senha", str(exc))
                 return
             except Exception as exc:
+                _safe_log(
+                    self.log_service, email, "alterar_senha", STATUS_ERROR, str(exc)
+                )
                 messagebox.showerror("Senha", f"Falha ao alterar senha:\n{exc}")
                 return
 
+            _safe_log(self.log_service, email, "alterar_senha", STATUS_SUCCESS)
             messagebox.showinfo("Senha", "Senha atualizada com sucesso.")
             dialog.destroy()
 
