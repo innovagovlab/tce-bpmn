@@ -1,74 +1,25 @@
 import hashlib
-import os
-import re
 import secrets
 import smtplib
 import ssl
 import string
-import sys
 from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
-from pathlib import Path
 
 import bcrypt
-import pyodbc
-from dotenv import load_dotenv
+
+from utils.db import (
+    ensure_database as _ensure_database,
+    get_connection as _connect_db,
+    get_env as _get_env,
+    get_env_int as _get_env_int,
+    get_env_bool as _get_env_bool,
+    load_env_files as _load_env_files,
+)
 
 
 class AuthError(RuntimeError):
     pass
-
-
-def _bundle_base_path() -> Path:
-    if getattr(sys, "frozen", False):
-        return Path(getattr(sys, "_MEIPASS", Path(sys.executable).resolve().parent))
-    return Path(__file__).resolve().parent.parent
-
-
-def _app_base_path() -> Path:
-    if getattr(sys, "frozen", False):
-        return Path(sys.executable).resolve().parent
-    return Path(__file__).resolve().parent.parent
-
-
-_BUNDLE_BASE_PATH = _bundle_base_path()
-_APP_BASE_PATH = _app_base_path()
-
-
-def _load_env_files() -> None:
-    candidates = [
-        _APP_BASE_PATH / ".env",
-        _BUNDLE_BASE_PATH / ".env",
-        _BUNDLE_BASE_PATH / "_internal" / ".env",
-    ]
-    for env_path in candidates:
-        if env_path.exists():
-            load_dotenv(dotenv_path=env_path, override=False)
-
-
-def _get_env(name: str, default: str | None = None, *aliases: str) -> str | None:
-    for key in (name, *aliases):
-        value = os.getenv(key)
-        if value:
-            return value
-    return default
-
-
-def _get_env_int(name: str, default: int) -> int:
-    value = os.getenv(name)
-    if value is None or value.strip() == "":
-        return default
-    try:
-        return int(value)
-    except ValueError as exc:
-        raise AuthError(f"Valor inválido para {name}") from exc
-
-
-def _get_env_bool(name: str, default: bool) -> bool:
-    value = os.getenv(name)
-    if value is None or value.strip() == "":
-        return default
-    return value.strip().lower() in {"1", "true", "yes", "y"}
 
 
 def _normalize_email(email: str) -> str:
@@ -78,49 +29,6 @@ def _normalize_email(email: str) -> str:
 def _is_allowed_email_domain(email: str) -> bool:
     domain = email.rsplit("@", 1)[-1]
     return domain == "tcepe.tc.br"
-
-
-def _validate_identifier(name: str) -> str:
-    if not re.fullmatch(r"[A-Za-z0-9_]+", name):
-        raise AuthError("DB_NAME deve conter apenas letras, números ou underscore")
-    return name
-
-
-def _build_conn_str(database: str) -> str:
-    driver = _get_env("DB_DRIVER", "ODBC Driver 18 for SQL Server")
-    server = _get_env("DB_SERVER", "localhost,1433")
-    user = _get_env("DB_USER", "sa")
-    password = _get_env("DB_PASSWORD", None, "MSSQL_SA_PASSWORD")
-    encrypt = _get_env("DB_ENCRYPT", "yes")
-    trust_cert = _get_env("DB_TRUST_CERT", "yes")
-
-    if not password:
-        raise AuthError("DB_PASSWORD (ou MSSQL_SA_PASSWORD) é obrigatório")
-
-    return (
-        f"Driver={{{driver}}};"
-        f"Server={server};"
-        f"Database={database};"
-        f"UID={user};"
-        f"PWD={password};"
-        f"Encrypt={encrypt};"
-        f"TrustServerCertificate={trust_cert};"
-        "Connection Timeout=5;"
-    )
-
-
-def _ensure_database() -> str:
-    db_name = _validate_identifier(_get_env("DB_NAME", "tce_bpmn"))
-    master_conn_str = _build_conn_str("master")
-    with pyodbc.connect(master_conn_str, autocommit=True) as conn:
-        cursor = conn.cursor()
-        cursor.execute(f"IF DB_ID(N'{db_name}') IS NULL CREATE DATABASE [{db_name}]")
-    return db_name
-
-
-def _connect_db() -> pyodbc.Connection:
-    db_name = _validate_identifier(_get_env("DB_NAME", "tce_bpmn"))
-    return pyodbc.connect(_build_conn_str(db_name))
 
 
 def _hash_password(password: str) -> str:
